@@ -1,0 +1,265 @@
+---
+title: "Self Billing"
+---
+
+# Self-Billing for Supplier Payouts
+
+Record purchases from suppliers using self-billing, where your platform issues purchase invoices on behalf of suppliers.
+
+## Overview
+
+Self-billing is a process where the buyer (your platform) creates the purchase invoice on behalf of the seller (supplier). This is common in marketplace platforms for:
+
+- Automated payout statements to sellers
+- Simplified supplier onboarding (no invoicing system required)
+- Consistent invoice formatting across all suppliers
+- Easier reconciliation of purchases
+
+## What is self-billing?
+
+In traditional invoicing, the supplier creates and sends an invoice to the buyer. In self-billing:
+
+```
+Platform creates invoice → Supplier accepts → Platform pays
+```
+
+Your platform acts as both the invoice issuer and the customer, creating purchase invoices that represent amounts owed to suppliers.
+
+<Note>
+Self-billing requires prior agreement with suppliers and must comply with local tax regulations. Ensure suppliers consent to this arrangement and that it's permitted in your jurisdiction.
+</Note>
+
+## Use cases
+
+Self-billing is ideal for:
+
+- **Marketplace platforms**: Record commissions and payouts to sellers
+- **Gig economy platforms**: Document contractor payments
+- **Wholesale platforms**: Automate purchase recording from multiple suppliers
+- **Dropshipping**: Track costs from fulfillment partners
+
+## Prerequisites
+
+Before implementing self-billing, ensure you have:
+
+1. **Your organization set up** with `ownership=self`
+2. **Supplier organizations created** with `ownership=external` and role `MERCHANT`
+3. **Tax registrations configured** for applicable jurisdictions
+
+## Invoice lifecycle
+
+Self-billed invoices follow the same lifecycle as regular invoices:
+
+```
+DRAFT → FINALIZED → (CANCELLED)
+```
+
+The key difference is that `flow=purchases` and your platform's organization ID is the `customer_id` while the supplier organization ID is the `supplier_id`.
+
+## Step 1: Create a purchase invoice
+
+Create a purchase invoice with the supplier as the issuer and your platform as the customer.
+
+<CodeGroup>
+```bash cURL
+curl https://api.nocotax.app/invoices \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "purchases",
+    "supplier_id": "org_supplier_456",
+    "currency": "EUR",
+    "automatic_tax_calculation": {
+      "enabled": true
+    },
+    "items": [
+      {
+        "title": "Payouts on sales - Order #12345",
+        "quantity": 1,
+        "unit_extratax_amount": 15000,
+        "product": {
+          "tax_code": "D10000000"
+        }
+      },
+      {
+        "description": "Tipping",
+        "quantity": 1,
+        "unit_extratax_amount": 8500,
+        "product": {
+          "tax_code": "D00000000"
+        }
+      }
+    ]
+  }'
+```
+</CodeGroup>
+
+### Key parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `flow` | Must be `purchases` for self-billing |
+| `supplier_id` | The supplier/seller organization ID |
+| `currency` | Three-letter ISO currency code |
+| `automatic_tax_calculation.enabled` | Set to `true` to calculate input tax |
+| `items` | Array of up to 10 line items for services/goods purchased |
+
+<Warning>
+The `supplier_id` and `customer_id` are reversed compared to sales invoices. For purchases, your platform is always the customer.
+</Warning>
+
+## Step 2: Review and adjust
+
+While in `DRAFT` status, you can:
+
+- Review calculated tax amounts (potential input VAT to claim)
+- Add or modify line items
+- Update amounts or descriptions
+- Set payment terms
+
+The draft does not yet affect accounts payable (AP) balances.
+
+## Step 3: Finalize the purchase invoice
+
+When ready to issue the payout statement, finalize the invoice:
+
+<CodeGroup>
+```bash cURL
+curl https://api.nocotax.app/invoices/inv_456/finalize \
+  -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</CodeGroup>
+
+Finalizing will:
+
+1. Assign a sequential invoice number
+2. Set the invoice date to the current date
+3. Calculate `due_date` if `payment_terms` were provided
+4. Update the supplier's accounts payable (AP) balance
+5. Lock the invoice from modifications
+6. Generate the PDF file for the invoice.
+
+## Step 4: Record the payout
+
+When you pay the supplier, record the payment:
+
+<CodeGroup>
+```bash cURL
+curl https://api.nocotax.app/invoices/inv_456/attach_payment \
+  -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transaction_data": {
+      "amount": 23500,
+      "currency": "EUR",
+      "transaction_type": "transfer",
+      "reference": "WISE_TRANSFER_789",
+    }
+  }'
+```
+
+</CodeGroup>
+
+This updates the supplier's AP balance and marks the invoice as paid.
+
+
+## Tax considerations
+
+Self-billing has important tax implications:
+
+### Input VAT recovery
+
+When `automatic_tax_calculation` is enabled, Nocotax calculates the input VAT you can potentially claim back on purchases, based on:
+
+- Your platform's tax registrations
+- The supplier's tax registrations
+- The nature of the goods/services purchased
+
+### Reverse charge mechanism
+
+In some jurisdictions, B2B services may be subject to reverse charge, where the buyer (your platform) accounts for VAT instead of the supplier. Nocotax handles this automatically when:
+
+- Both parties have valid tax registrations
+- The transaction qualifies for reverse charge
+
+### Record keeping
+
+Maintain records of:
+- Self-billing agreements with suppliers
+- Supplier consent to self-billing arrangements
+- Invoice copies provided to suppliers
+- Proof of payment
+
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Obtain written consent from suppliers">
+    Always have signed self-billing agreements in place before issuing purchase invoices on behalf of suppliers. This is often a legal requirement.
+  </Accordion>
+
+  <Accordion title="Provide copies to suppliers">
+    Send suppliers copies of self-billed invoices for their records. They'll need these for their accounting and tax compliance.
+  </Accordion>
+
+  <Accordion title="Use consistent numbering">
+    Let Nocotax handle invoice numbering automatically when finalizing. This ensures sequential, compliant numbering.
+  </Accordion>
+
+  <Accordion title="Include detailed descriptions">
+    Make line item descriptions clear and specific. Include order numbers, date ranges, or other references that help suppliers reconcile.
+  </Accordion>
+
+  <Accordion title="Reconcile regularly">
+    Match Nocotax invoices with your internal sales/order data regularly to catch discrepancies early.
+  </Accordion>
+
+  <Accordion title="Handle currency carefully">
+    If you operate in multiple currencies, ensure each invoice uses the correct currency for the supplier.
+  </Accordion>
+</AccordionGroup>
+
+## Credit notes for purchases
+
+To correct a self-billed purchase invoice, create a credit note:
+
+```javascript
+const creditNote = await nocotax.creditNotes.create({
+  flow: 'purchases',
+  supplier_id: 'org_supplier_456',
+  currency: 'EUR',
+  invoice_id: 'inv_456', // Original invoice to credit
+  items: [
+    {
+      description: 'Correction: Order #12345 was cancelled',
+      quantity: 1,
+      unit_extratax_amount: 1500, // Credit the original amount
+      tax_code: 'D10000000'
+    }
+  ]
+});
+
+await nocotax.creditNotes.finalize(creditNote.id);
+```
+
+The credit note will reduce the AP balance and the `amount_remaining` on the original invoice.
+
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Customer Invoicing" icon="receipt" href="/undisclosed-agent/customer-invoicing">
+    Learn about the sales side of the flow
+  </Card>
+  <Card title="Credit Notes" icon="file-invoice" href="/credit-notes">
+    Handle corrections and refunds
+  </Card>
+  <Card title="Organizations" icon="building" href="/organizations">
+    Manage suppliers and customers
+  </Card>
+  <Card title="API Reference" icon="code" href="https://app.nocotax.app/apidoc#tag/Invoices">
+    Explore the complete API
+  </Card>
+</CardGroup>
