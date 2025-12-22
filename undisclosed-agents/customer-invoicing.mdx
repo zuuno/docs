@@ -1,3 +1,236 @@
 ---
 title: "Customer Invoicing"
 ---
+
+# Customer Invoicing
+
+Issue invoices to customers for goods or services sold through your platform as an undisclosed agent.
+
+## Overview
+
+Customer invoicing is the sales flow where your platform issues invoices to end customers. This guide covers the complete lifecycle from creating a draft invoice through payment reconciliation.
+
+## Prerequisites
+
+Before you can issue customer invoices, ensure you have:
+
+1. **Your organization set up** with `ownership=self`
+2. **Customer organizations created** with `ownership=external` and role `BUYER`
+3. **Tax registrations configured** for jurisdictions where you sell
+4. **Product/service definitions** with appropriate tax categories
+
+## Invoice lifecycle
+
+Every invoice follows this lifecycle:
+
+```
+DRAFT → FINALIZED → (CANCELLED)
+```
+
+- **DRAFT**: Invoice is being prepared, can be modified
+- **FINALIZED**: Invoice is issued, has a sequential number and date
+- **CANCELLED**: Invoice is voided (not yet implemented)
+
+## Step 1: Create a draft invoice
+
+Create a sales invoice with up to 10 line items in a single API call.
+
+<CodeGroup>
+```bash cURL
+curl https://api.nocotax.app/invoices \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "customer_id": "org_customer_123",
+    "currency": "EUR",
+    "automatic_tax_calculation": {
+      "enabled": true
+    },
+    "items": [
+      {
+        "description": "Premium Subscription - Monthly",
+        "quantity": 1,
+        "unit_extratax_amount": 2900,
+        "tax_code": "D10000000"
+      },
+      {
+        "description": "Additional User Seat",
+        "quantity": 3,
+        "unit_amount": 500,
+        "tax_code": "D10000000"
+      }
+    ]
+  }'
+```
+
+
+</CodeGroup>
+
+### Key parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `flow` | Must be `sales` for customer invoicing |
+| `customer_id` | The customer organization ID |
+| `currency` | Three-letter ISO currency code |
+| `automatic_tax_calculation.enabled` | Set to `true` to calculate tax automatically |
+| `items` | Array of up to 10 invoice line items |
+
+### Amounts
+
+All monetary amounts are in the currency's smallest unit (cents for EUR/USD, etc.).
+
+<Note>
+Setting `automatic_tax_calculation.enabled: true` will calculate tax based on:
+- Supplier and customer tax registrations
+- Product tax categories
+- Applicable tax rules for the transaction
+</Note>
+
+## Step 2: Review the draft
+
+The created invoice is in `DRAFT` status. You can:
+
+- Review the calculated tax amounts
+- Modify line items if needed
+- Add payment terms or due dates
+- Update billing addresses
+
+While in draft status, the invoice has no invoice number and does not affect AP/AR balances.
+
+## Step 3: Finalize the invoice
+
+When ready to issue the invoice, finalize it:
+
+<CodeGroup>
+```bash cURL
+curl https://api.nocotax.app/invoices/inv_123/finalize \
+  -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+</CodeGroup>
+
+Finalizing the invoice will:
+
+1. Assign a sequential invoice number
+2. Set the invoice date to the current date
+3. Calculate `due_date` based on `payment_terms` (if provided)
+4. Update the customer's accounts receivable (AR) balance
+5. Lock the invoice from further modifications
+6. Generate the PDF file representing the invoice
+
+<Warning>
+Once finalized, an invoice cannot be modified. To correct a finalized invoice, issue a credit note instead.
+</Warning>
+
+## Step 4: Mark as paid
+
+When you receive payment from the customer, mark the invoice as paid:
+
+<CodeGroup>
+```bash cURL
+curl https://api.nocotax.app/invoices/inv_123/attach_payment \
+  -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+</CodeGroup>
+
+This marks the invoice as paid and updates the customer's AR balance.
+
+### Recording partial or detailed payments
+
+To record specific payment details:
+
+<CodeGroup>
+```bash cURL
+curl https://api.nocotax.app/invoices/inv_123/attach_payment \
+  -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transaction_data": {
+      "amount": 2500,
+      "currency": "EUR",
+      "transaction_type": "payment",
+      "reference": "STRIPE_ch_abc123"
+    }
+  }'
+```
+
+</CodeGroup>
+
+This allows you to:
+- Record partial payments
+- Link to external payment references (Stripe, bank transfers, etc.)
+- Track payment dates separately from invoice dates
+
+## Payment status
+
+Nocotax automatically tracks invoice payment status:
+
+| Status | Description |
+|--------|-------------|
+| `OPEN` | Invoice is due but the due date hasn't passed |
+| `DUE` | Invoice is past its due date and unpaid |
+| `PAID` | Invoice has been fully paid |
+| `PARTIALLY_PAID` | Invoice has received partial payment |
+
+The `amount_remaining` field always shows how much is still owed.
+
+## Handling corrections
+
+To correct a finalized invoice, issue a credit note:
+
+1. Create a credit note referencing the original invoice
+2. Finalize the credit note
+3. The credit note automatically reduces the `amount_remaining` on the invoice
+4. If needed, issue a new corrected invoice
+
+[Learn more about credit notes →](/credit-notes)
+
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Always enable automatic tax calculation">
+    Set `automatic_tax_calculation.enabled: true` to ensure accurate tax calculations based on current regulations and your tax registrations.
+  </Accordion>
+
+  <Accordion title="Use payment_terms for consistent due dates">
+    Instead of manually calculating due dates, set `payment_terms` in days and let Nocotax calculate the `due_date` when finalizing.
+  </Accordion>
+
+  <Accordion title="Link external payment references">
+    When recording payments, include the `reference` parameter with your payment processor's transaction ID for easier reconciliation.
+  </Accordion>
+
+  <Accordion title="Monitor payment status programmatically">
+    Set up webhooks or polling to track when invoices become `DUE` so you can send automated reminders.
+  </Accordion>
+
+  <Accordion title="Handle currency consistently">
+    Ensure your customer organization and invoice use the same currency to avoid conversion issues.
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Self-Billing Guide" icon="file-invoice-dollar" href="/undisclosed-agent/self-billing">
+    Learn how to record supplier purchases
+  </Card>
+  <Card title="Credit Notes" icon="receipt" href="/credit-notes">
+    Issue corrections and refunds
+  </Card>
+  <Card title="Tax Calculations" icon="calculator" href="/tax-calculations">
+    Understand tax calculation logic
+  </Card>
+  <Card title="API Reference" icon="code" href="https://app.nocotax.app/apidoc#tag/Invoices">
+    View complete API documentation
+  </Card>
+</CardGroup>
