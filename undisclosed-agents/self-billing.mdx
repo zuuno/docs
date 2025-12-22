@@ -1,10 +1,7 @@
 ---
-title: "Self Billing"
+title: "Self-Billing for Supplier Payouts"
+description: "Record purchases from suppliers using self-billing, where your platform issues purchase invoices on behalf of suppliers."
 ---
-
-# Self-Billing for Supplier Payouts
-
-Record purchases from suppliers using self-billing, where your platform issues purchase invoices on behalf of suppliers.
 
 ## Overview
 
@@ -26,7 +23,7 @@ Platform creates invoice → Supplier accepts → Platform pays
 Your platform acts as both the invoice issuer and the customer, creating purchase invoices that represent amounts owed to suppliers.
 
 <Note>
-Self-billing requires prior agreement with suppliers and must comply with local tax regulations. Ensure suppliers consent to this arrangement and that it's permitted in your jurisdiction.
+  Self-billing requires prior agreement with suppliers and must comply with local tax regulations. Ensure suppliers consent to this arrangement and that it's permitted in your jurisdiction.
 </Note>
 
 ## Use cases
@@ -61,6 +58,7 @@ The key difference is that `flow=purchases` and your platform's organization ID 
 Create a purchase invoice with the supplier as the issuer and your platform as the customer.
 
 <CodeGroup>
+
 ```bash cURL
 curl https://api.nocotax.app/invoices \
   -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
@@ -92,20 +90,21 @@ curl https://api.nocotax.app/invoices \
     ]
   }'
 ```
+
 </CodeGroup>
 
 ### Key parameters
 
-| Parameter | Description |
-|-----------|-------------|
-| `flow` | Must be `purchases` for self-billing |
-| `supplier_id` | The supplier/seller organization ID |
-| `currency` | Three-letter ISO currency code |
-| `automatic_tax_calculation.enabled` | Set to `true` to calculate input tax |
-| `items` | Array of up to 10 line items for services/goods purchased |
+| Parameter                           | Description                                               |
+| ----------------------------------- | --------------------------------------------------------- |
+| `flow`                              | Must be `purchases` for self-billing                      |
+| `supplier_id`                       | The supplier/seller organization ID                       |
+| `currency`                          | Three-letter ISO currency code                            |
+| `automatic_tax_calculation.enabled` | Set to `true` to calculate input tax                      |
+| `items`                             | Array of up to 10 line items for services/goods purchased |
 
 <Warning>
-The `supplier_id` and `customer_id` are reversed compared to sales invoices. For purchases, your platform is always the customer.
+  The `supplier_id` and `customer_id` are reversed compared to sales invoices. For purchases, your platform is always the customer.
 </Warning>
 
 ## Step 2: Review and adjust
@@ -124,11 +123,13 @@ The draft does not yet affect accounts payable (AP) balances.
 When ready to issue the payout statement, finalize the invoice:
 
 <CodeGroup>
+
 ```bash cURL
 curl https://api.nocotax.app/invoices/inv_456/finalize \
   -X POST \
   -u ${ACCOUNT_ID}:${YOUR_API_KEY}
 ```
+
 </CodeGroup>
 
 Finalizing will:
@@ -145,6 +146,7 @@ Finalizing will:
 When you pay the supplier, record the payment:
 
 <CodeGroup>
+
 ```bash cURL
 curl https://api.nocotax.app/invoices/inv_456/attach_payment \
   -X POST \
@@ -163,7 +165,6 @@ curl https://api.nocotax.app/invoices/inv_456/attach_payment \
 </CodeGroup>
 
 This updates the supplier's AP balance and marks the invoice as paid.
-
 
 ## Tax considerations
 
@@ -187,11 +188,11 @@ In some jurisdictions, B2B services may be subject to reverse charge, where the 
 ### Record keeping
 
 Maintain records of:
+
 - Self-billing agreements with suppliers
 - Supplier consent to self-billing arrangements
 - Invoice copies provided to suppliers
 - Proof of payment
-
 
 ## Best practices
 
@@ -199,23 +200,18 @@ Maintain records of:
   <Accordion title="Obtain written consent from suppliers">
     Always have signed self-billing agreements in place before issuing purchase invoices on behalf of suppliers. This is often a legal requirement.
   </Accordion>
-
   <Accordion title="Provide copies to suppliers">
     Send suppliers copies of self-billed invoices for their records. They'll need these for their accounting and tax compliance.
   </Accordion>
-
   <Accordion title="Use consistent numbering">
     Let Nocotax handle invoice numbering automatically when finalizing. This ensures sequential, compliant numbering.
   </Accordion>
-
   <Accordion title="Include detailed descriptions">
     Make line item descriptions clear and specific. Include order numbers, date ranges, or other references that help suppliers reconcile.
   </Accordion>
-
   <Accordion title="Reconcile regularly">
     Match Nocotax invoices with your internal sales/order data regularly to catch discrepancies early.
   </Accordion>
-
   <Accordion title="Handle currency carefully">
     If you operate in multiple currencies, ensure each invoice uses the correct currency for the supplier.
   </Accordion>
@@ -245,7 +241,6 @@ await nocotax.creditNotes.finalize(creditNote.id);
 ```
 
 The credit note will reduce the AP balance and the `amount_remaining` on the original invoice.
-
 
 ## Next steps
 

@@ -33,6 +33,7 @@ DRAFT → FINALIZED → (CANCELLED)
 Create a sales invoice with up to 10 line items in a single API call.
 
 <CodeGroup>
+
 ```bash cURL
 curl https://api.nocotax.app/invoices \
   -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
@@ -61,28 +62,28 @@ curl https://api.nocotax.app/invoices \
   }'
 ```
 
-
 </CodeGroup>
 
 ### Key parameters
 
-| Parameter | Description |
-|-----------|-------------|
-| `flow` | Must be `sales` for customer invoicing |
-| `customer_id` | The customer organization ID |
-| `currency` | Three-letter ISO currency code |
+| Parameter                           | Description                                  |
+| ----------------------------------- | -------------------------------------------- |
+| `flow`                              | Must be `sales` for customer invoicing       |
+| `customer_id`                       | The customer organization ID                 |
+| `currency`                          | Three-letter ISO currency code               |
 | `automatic_tax_calculation.enabled` | Set to `true` to calculate tax automatically |
-| `items` | Array of up to 10 invoice line items |
+| `items`                             | Array of up to 10 invoice line items         |
 
 ### Amounts
 
 All monetary amounts are in the currency's smallest unit (cents for EUR/USD, etc.).
 
 <Note>
-Setting `automatic_tax_calculation.enabled: true` will calculate tax based on:
-- Supplier and customer tax registrations
-- Product tax categories
-- Applicable tax rules for the transaction
+  Setting `automatic_tax_calculation.enabled: true` will calculate tax based on:
+
+  - Supplier and customer tax registrations
+  - Product tax categories
+  - Applicable tax rules for the transaction
 </Note>
 
 ## Step 2: Review the draft
@@ -101,6 +102,7 @@ While in draft status, the invoice has no invoice number and does not affect AP/
 When ready to issue the invoice, finalize it:
 
 <CodeGroup>
+
 ```bash cURL
 curl https://api.nocotax.app/invoices/inv_123/finalize \
   -X POST \
@@ -119,7 +121,7 @@ Finalizing the invoice will:
 6. Generate the PDF file representing the invoice
 
 <Warning>
-Once finalized, an invoice cannot be modified. To correct a finalized invoice, issue a credit note instead.
+  Once finalized, an invoice cannot be modified. To correct a finalized invoice, issue a credit note instead.
 </Warning>
 
 ## Step 4: Mark as paid
@@ -127,6 +129,7 @@ Once finalized, an invoice cannot be modified. To correct a finalized invoice, i
 When you receive payment from the customer, mark the invoice as paid:
 
 <CodeGroup>
+
 ```bash cURL
 curl https://api.nocotax.app/invoices/inv_123/attach_payment \
   -X POST \
@@ -144,6 +147,7 @@ This marks the invoice as paid and updates the customer's AR balance.
 To record specific payment details:
 
 <CodeGroup>
+
 ```bash cURL
 curl https://api.nocotax.app/invoices/inv_123/attach_payment \
   -X POST \
@@ -162,6 +166,7 @@ curl https://api.nocotax.app/invoices/inv_123/attach_payment \
 </CodeGroup>
 
 This allows you to:
+
 - Record partial payments
 - Link to external payment references (Stripe, bank transfers, etc.)
 - Track payment dates separately from invoice dates
@@ -170,12 +175,12 @@ This allows you to:
 
 Nocotax automatically tracks invoice payment status:
 
-| Status | Description |
-|--------|-------------|
-| `OPEN` | Invoice is due but the due date hasn't passed |
-| `DUE` | Invoice is past its due date and unpaid |
-| `PAID` | Invoice has been fully paid |
-| `PARTIALLY_PAID` | Invoice has received partial payment |
+| Status           | Description                                   |
+| ---------------- | --------------------------------------------- |
+| `OPEN`           | Invoice is due but the due date hasn't passed |
+| `DUE`            | Invoice is past its due date and unpaid       |
+| `PAID`           | Invoice has been fully paid                   |
+| `PARTIALLY_PAID` | Invoice has received partial payment          |
 
 The `amount_remaining` field always shows how much is still owed.
 
@@ -189,7 +194,6 @@ To correct a finalized invoice, issue a credit note:
 4. If needed, issue a new corrected invoice
 
 [Learn more about credit notes →](/credit-notes)
-
 
 ## Next steps
 
