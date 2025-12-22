@@ -63,7 +63,7 @@ Create a purchase invoice with the supplier as the issuer and your platform as t
 <CodeGroup>
 ```bash cURL
 curl https://api.nocotax.app/invoices \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
   -H "Content-Type: application/json" \
   -d '{
     "flow": "purchases",
@@ -127,7 +127,7 @@ When ready to issue the payout statement, finalize the invoice:
 ```bash cURL
 curl https://api.nocotax.app/invoices/inv_456/finalize \
   -X POST \
-  -H "Authorization: Bearer YOUR_API_KEY"
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY}
 ```
 </CodeGroup>
 
@@ -148,7 +148,7 @@ When you pay the supplier, record the payment:
 ```bash cURL
 curl https://api.nocotax.app/invoices/inv_456/attach_payment \
   -X POST \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
   -H "Content-Type: application/json" \
   -d '{
     "transaction_data": {
