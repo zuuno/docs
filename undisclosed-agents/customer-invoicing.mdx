@@ -191,30 +191,6 @@ To correct a finalized invoice, issue a credit note:
 [Learn more about credit notes →](/credit-notes)
 
 
-## Best practices
-
-<AccordionGroup>
-  <Accordion title="Always enable automatic tax calculation">
-    Set `automatic_tax_calculation.enabled: true` to ensure accurate tax calculations based on current regulations and your tax registrations.
-  </Accordion>
-
-  <Accordion title="Use payment_terms for consistent due dates">
-    Instead of manually calculating due dates, set `payment_terms` in days and let Nocotax calculate the `due_date` when finalizing.
-  </Accordion>
-
-  <Accordion title="Link external payment references">
-    When recording payments, include the `reference` parameter with your payment processor's transaction ID for easier reconciliation.
-  </Accordion>
-
-  <Accordion title="Monitor payment status programmatically">
-    Set up webhooks or polling to track when invoices become `DUE` so you can send automated reminders.
-  </Accordion>
-
-  <Accordion title="Handle currency consistently">
-    Ensure your customer organization and invoice use the same currency to avoid conversion issues.
-  </Accordion>
-</AccordionGroup>
-
 ## Next steps
 
 <CardGroup cols={2}>
