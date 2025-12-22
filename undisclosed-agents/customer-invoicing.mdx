@@ -34,7 +34,7 @@ Create a sales invoice with up to 10 line items in a single API call.
 <CodeGroup>
 ```bash cURL
 curl https://api.nocotax.app/invoices \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
   -H "Content-Type: application/json" \
   -d '{
     "flow": "sales",
@@ -103,7 +103,7 @@ When ready to issue the invoice, finalize it:
 ```bash cURL
 curl https://api.nocotax.app/invoices/inv_123/finalize \
   -X POST \
-  -H "Authorization: Bearer YOUR_API_KEY"
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY}
 ```
 
 </CodeGroup>
@@ -129,7 +129,7 @@ When you receive payment from the customer, mark the invoice as paid:
 ```bash cURL
 curl https://api.nocotax.app/invoices/inv_123/attach_payment \
   -X POST \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
@@ -146,7 +146,7 @@ To record specific payment details:
 ```bash cURL
 curl https://api.nocotax.app/invoices/inv_123/attach_payment \
   -X POST \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
   -H "Content-Type: application/json" \
   -d '{
     "transaction_data": {
