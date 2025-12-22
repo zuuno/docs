@@ -1,0 +1,136 @@
+---
+title: "Undisclosed Agent Flow overview"
+description: "Learn how to implement buy/resell mode for marketplace and platform businesses acting as undisclosed agents."
+---
+
+## What is an undisclosed agent?
+
+An undisclosed agent is a business model where a platform or marketplace purchases goods or services from suppliers and resells them to customers under its own name. Unlike a disclosed agent (where the supplier is visible to the customer), the platform acts as the principal in both transactions.
+
+This model is common in:
+
+- E-commerce marketplaces that purchase inventory and resell to customers
+- Booking platforms that buy services wholesale and resell retail
+- Fulfillment services that handle goods on behalf of multiple suppliers
+- Creator economy platforms that aggregate, repackage, or resell digital content, services, or merchandise from creators (e.g., NFT marketplaces, print-on-demand stores, or platforms bundling creator subscriptions).
+
+## How it works
+
+The undisclosed agent flow involves two separate invoice flows:
+
+### 1. Purchase flow (supplier → platform)
+
+The platform receives invoices from suppliers for goods or services purchased. These are inbound invoices that represent the platform's costs. To streamline integration and reduce administrative overhead, this process can be automated using self-billing. Under this model:
+
+- The platform generates supplier invoices on behalf of the supplier (self-billing).
+- The platform validates and records these invoices as accounts payable.
+
+```
+Supplier → Invoice → Platform (as customer)
+```
+
+### 2. Sales flow (platform → customer)
+
+The platform issues invoices to end customers for the goods or services sold. These are outbound invoices that represent the platform's revenue.
+
+```
+Platform (as supplier) → Invoice → Customer
+```
+
+## Tax considerations
+
+As an undisclosed agent, your platform is responsible for:
+
+- **VAT/GST collection**: Charging appropriate tax to customers based on their location
+- **Tax registration**: Maintaining tax registrations in relevant jurisdictions
+- **Input tax deduction**: Claiming back tax paid on purchases (where applicable)
+- **Tax reporting**: Filing returns that account for both purchase and sales tax
+
+Nocotax handles automatic tax calculation for both flows, ensuring compliance across jurisdictions.
+
+## Key concepts
+
+### Organizations
+
+In Nocotax, every business entity is represented as an Organization:
+
+- **Your platform** (`ownership=self`): Your business entity in the system
+- **Suppliers** (`ownership=external`, role=`MERCHANT`): Businesses you purchase from
+- **Customers** (`ownership=external`, role=`BUYER`): Businesses or individuals you sell to
+
+Learn more about [Organizations](/organizations).
+
+### Invoice flows
+
+Nocotax supports two invoice flows for undisclosed agents:
+
+- **Purchases** (`flow=purchases`): For inbound invoices from suppliers
+- **Sales** (`flow=sales`): For outbound invoices to customers
+
+Each flow follows the same lifecycle: `DRAFT` → `FINALIZED` → (optionally) `CANCELLED`.
+
+### Tax registrations
+
+Organizations can have multiple tax registrations representing where they're registered for VAT/GST. This determines:
+
+- Where you can claim input tax on purchases
+- Where you must charge tax on sales
+- Which tax rates apply to transactions
+
+Learn more about [Tax Registrations](/tax-registrations).
+
+## Integration patterns
+
+There are two main integration patterns for undisclosed agents:
+
+### Customer invoicing
+
+Issue invoices to customers for goods or services sold through your platform. This typically involves:
+
+1. Creating a sales invoice with line items
+2. (Optional) Enabling automatic tax calculation
+3. Finalizing the invoice to generate a sequential number
+4. Marking the invoice as paid when payment is received
+
+[View customer invoicing guide →](/undisclosed-agent/customer-invoicing)
+
+### Self-billing for supplier payouts
+
+Record purchases from suppliers using self-billing, where your platform issues the invoice on behalf of the supplier. This is useful for:
+
+- Payout statements to sellers on your marketplace
+- Automated purchase recording
+- Simplified supplier onboarding
+
+[View self-billing guide →](/undisclosed-agent/self-billing)
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Customer Invoicing" icon="receipt" href="/undisclosed-agent/customer-invoicing">
+    Learn how to invoice customers for sales
+  </Card>
+  <Card title="Self-Billing" icon="file-invoice-dollar" href="/undisclosed-agent/self-billing">
+    Implement supplier payout statements
+  </Card>
+  <Card title="API Reference" icon="code" href="https://app.nocotax.app/apidoc">
+    Explore the full API documentation
+  </Card>
+  <Card title="Tax Calculations" icon="calculator" href="/tax-calculations">
+    Understand automatic tax handling
+  </Card>
+</CardGroup>
+
+## Common questions
+
+**Do I need separate accounts for test and production?**
+
+No. Each Nocotax account has two modes: `testmode` for sandbox testing and `livemode` for production. Data is isolated between modes.
+
+**Can I use the same organization as both supplier and customer?**
+
+Yes, but it's not a good practice. External organizations can have multiple roles simultaneously (`MERCHANT` and `BUYER`), allowing you to both buy from and sell to the same entity, but for testing purposes, it's easier to separate flows.
+
+**How do credit notes work in this model?**
+
+Credit notes work the same way in both flows. They reduce the amount remaining to pay on invoices and automatically adjust AP/AR balances. Learn more about [Credit Notes](/credit-notes).
