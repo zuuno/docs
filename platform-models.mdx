@@ -1,8 +1,7 @@
 ---
 title: "Platform Models"
+description: "Configure your platform's economic model to match how your business operates and handle invoicing automatically."
 ---
-
-Configure your platform's economic model to match how your business operates and handle invoicing automatically.
 
 ## Overview
 
@@ -20,12 +19,14 @@ Choosing the right platform model ensures accurate invoicing, tax calculations, 
 In the commission agent model, your platform acts as an intermediary between buyers and sellers. You facilitate transactions but don't take ownership of the goods or services.
 
 **How it works**:
+
 - Sellers list products/services on your platform
 - Customers purchase from sellers through your platform
 - You earn a commission on each transaction
 - The seller remains the merchant of record (transparent model)
 
 **Key features**:
+
 - ✓ You take commissions upon sales and bill sellers periodically or at every sale
 - ✓ You can invoice customers on behalf of sellers (if enabled)
 - Ideal for: Marketplaces, booking platforms, service aggregators
@@ -37,12 +38,14 @@ In the commission agent model, your platform acts as an intermediary between buy
 In the buy and resell model (also known as undisclosed agent), your platform purchases goods or services from suppliers and resells them to customers under your own name. The customer sees only your platform as the seller, not the original supplier.
 
 **How it works**:
+
 - You purchase inventory or services from suppliers
 - You set your own prices and markup
 - You invoice customers directly as the seller
 - Suppliers invoice you (or you use self-billing)
 
 **Key features**:
+
 - ✓ Total price and margin control
 - ✓ You directly invoice the buyer
 - ✓ You are billed by suppliers, but can automate through self-billing
@@ -55,25 +58,30 @@ In the buy and resell model (also known as undisclosed agent), your platform pur
 The buy and resell model doesn't require a one-to-one match between what you purchase and what you sell. Your platform can handle various product relationship scenarios:
 
 **One-to-many**: You purchase one item from a supplier and split it into multiple products sold separately.
-- *Example*: Buy wholesale fabric by the roll, sell it by the yard to multiple customers
+
+- _Example_: Buy wholesale fabric by the roll, sell it by the yard to multiple customers
 
 **Many-to-one**: You purchase multiple items from one or more suppliers and combine them into a single product offering.
-- *Example*: Purchase components from various suppliers and assemble them into a complete product kit
+
+- _Example_: Purchase components from various suppliers and assemble them into a complete product kit
 
 **Assembly/bundling**: You purchase individual items and create bundles or assembled products.
-- *Example*: Buy a laptop, mouse, and bag from different suppliers and sell them as a "productivity bundle"
+
+- _Example_: Buy a laptop, mouse, and bag from different suppliers and sell them as a "productivity bundle"
 
 **Value-added services**: You purchase goods and add services before reselling.
-- *Example*: Buy electronics, add warranty services and configuration, then sell as a package
+
+- _Example_: Buy electronics, add warranty services and configuration, then sell as a package
 
 In these scenarios, Nocotax allows you to:
+
 - Create purchase invoices for each supplier transaction
 - Create sales invoices that may not directly correspond to a single purchase
 - Track costs and revenue independently
 - Calculate margins accurately across complex product relationships
 
 <Note>
-You can enable both models simultaneously if your platform operates in multiple ways. For instance, some products might be sold on commission while others are purchased and resold.
+  You can enable both models simultaneously if your platform operates in multiple ways. For instance, some products might be sold on commission while others are purchased and resold.
 </Note>
 
 ## Configuration process
@@ -85,11 +93,11 @@ Setting up your platform models is a two-step process during onboarding:
 Choose which economic model(s) your platform uses.
 
 **During onboarding**:
+
 1. Navigate to **Select Platform Models** (step 3 of onboarding)
 2. Review the available models and their descriptions
 3. Select **Commission Agent**, **Buy and Resell**, or both
 4. Click **Continue** to proceed to configuration
-
 
 ### Step 2: Configure billing settings
 
@@ -103,15 +111,15 @@ Configure how and when you invoice sellers for commissions earned.
 
 Choose how often you want to generate invoices for commissions:
 
-| Frequency | Description | Best For |
-|-----------|-------------|----------|
-| **At transaction level** | Generates an invoice for each commission immediately | High-value transactions, low volume platforms |
-| **Daily** | Generates a single invoice aggregating all daily commissions per merchant | Platforms with steady daily activity |
-| **Weekly** | Generates a single invoice aggregating all weekly commissions per merchant | Medium-volume platforms with regular activity |
-| **Monthly** | Generates a single invoice aggregating all monthly commissions per merchant | High-volume platforms, established merchants |
+| Frequency                | Description                                                                 | Best For                                      |
+| ------------------------ | --------------------------------------------------------------------------- | --------------------------------------------- |
+| **At transaction level** | Generates an invoice for each commission immediately                        | High-value transactions, low volume platforms |
+| **Daily**                | Generates a single invoice aggregating all daily commissions per merchant   | Platforms with steady daily activity          |
+| **Weekly**               | Generates a single invoice aggregating all weekly commissions per merchant  | Medium-volume platforms with regular activity |
+| **Monthly**              | Generates a single invoice aggregating all monthly commissions per merchant | High-volume platforms, established merchants  |
 
 <Tip>
-For most platforms, monthly invoicing provides the best balance between administrative overhead and cash flow management.
+  For most platforms, monthly invoicing provides the best balance between administrative overhead and cash flow management.
 </Tip>
 
 ### Monthly invoice settings
@@ -119,6 +127,7 @@ For most platforms, monthly invoicing provides the best balance between administ
 If you select **Monthly** frequency, you'll need to specify:
 
 **Day of month**: Choose which day invoices are generated (1st-28th of each month). Common choices:
+
 - **1st**: Invoice at the start of the month for previous month's activity
 - **5th**: Allow time for transaction disputes/refunds before invoicing
 - **15th**: Mid-month invoicing for better cash flow distribution
@@ -131,15 +140,15 @@ Configure how you handle purchase invoices from suppliers (self-billing).
 
 Choose how often you want to generate purchase invoices for supplier payouts:
 
-| Frequency | Description | Best For | Availability |
-|-----------|-------------|----------|--------------|
-| **At transaction level** | Generates a purchase invoice for each order/transaction | High-value items, low volume | ✓ Available |
-| **Daily** | Generates a single invoice aggregating all daily purchases per supplier | Fast-moving inventory, daily payouts | Coming soon |
-| **Weekly** | Generates a single invoice aggregating all weekly purchases per supplier | Regular payout schedules | Coming soon |
-| **Monthly** | Generates a single invoice aggregating all monthly purchases per supplier | Established supplier relationships | Coming soon |
+| Frequency                | Description                                                               | Best For                             | Availability |
+| ------------------------ | ------------------------------------------------------------------------- | ------------------------------------ | ------------ |
+| **At transaction level** | Generates a purchase invoice for each order/transaction                   | High-value items, low volume         | ✓ Available  |
+| **Daily**                | Generates a single invoice aggregating all daily purchases per supplier   | Fast-moving inventory, daily payouts | Coming soon  |
+| **Weekly**               | Generates a single invoice aggregating all weekly purchases per supplier  | Regular payout schedules             | Coming soon  |
+| **Monthly**              | Generates a single invoice aggregating all monthly purchases per supplier | Established supplier relationships   | Coming soon  |
 
 <Note>
-Currently, only **at transaction level** is available for buy and resell self-billing. Aggregated frequencies (daily, weekly, monthly) are coming soon.
+  Currently, only **at transaction level** is available for buy and resell self-billing. Aggregated frequencies (daily, weekly, monthly) are coming soon.
 </Note>
 
 ## Combining both models
@@ -151,10 +160,10 @@ If your platform operates using both models, you can enable them simultaneously:
 **Scenario**: Your platform sells some products on commission (from third-party sellers) and also stocks and resells other products directly.
 
 **Configuration**:
+
 1. Enable both **Commission Agent** and **Buy and Resell** models
 2. Configure commission invoicing for marketplace sellers (e.g., monthly)
 3. Configure self-billing for direct purchases (e.g., transaction level)
-
 
 ## How invoicing works with each model
 
@@ -170,6 +179,7 @@ If your platform operates using both models, you can enable them simultaneously:
 ### Buy and Resell invoicing flow
 
 #### Customer invoicing (sales)
+
 1. **Customer purchases** from your platform
 2. **Immediately** or at your discretion:
    - You create a sales invoice
@@ -178,6 +188,7 @@ If your platform operates using both models, you can enable them simultaneously:
 3. **You finalize** and record payment
 
 #### Supplier billing (purchases)
+
 1. **You purchase** or facilitate a sale that requires supplier payout
 2. **At the configured frequency** (currently transaction level):
    - You generate a self-billed purchase invoice
@@ -185,23 +196,18 @@ If your platform operates using both models, you can enable them simultaneously:
    - Invoice is marked with `flow=purchases`
 3. **You finalize** and pay the supplier
 
-
-
 ## Best practices
 
 <AccordionGroup>
   <Accordion title="Choose frequency based on transaction volume">
     High-volume platforms benefit from less frequent invoicing (weekly/monthly) to reduce administrative overhead. Low-volume platforms or those with high-value transactions may prefer transaction-level invoicing for immediate visibility.
   </Accordion>
-
   <Accordion title="Align invoice dates with payout schedules">
     If you select monthly invoicing, choose a day of month that aligns with when you actually pay sellers or suppliers. This creates a consistent, predictable cash flow cycle.
   </Accordion>
-
   <Accordion title="Test in testmode first">
     Before going live, test your platform model configuration in testmode. Create sample transactions and review the generated invoices to ensure they match your expectations.
   </Accordion>
-
   <Accordion title="Document your model for sellers/suppliers">
     Clearly communicate to sellers and suppliers which model you're using and when they can expect invoices. This reduces confusion and support requests.
   </Accordion>
@@ -214,6 +220,7 @@ If your platform operates using both models, you can enable them simultaneously:
 **Situation**: You're launching a marketplace with a few sellers and low transaction volume.
 
 **Recommended configuration**:
+
 - Model: **Commission Agent**
 - Frequency: **At transaction level** or **Weekly**
 - Reasoning: Low volume means administrative overhead is manageable, and immediate invoicing provides clear visibility
@@ -223,6 +230,7 @@ If your platform operates using both models, you can enable them simultaneously:
 **Situation**: You've been operating for years with hundreds of suppliers and thousands of daily orders.
 
 **Recommended configuration**:
+
 - Model: **Buy and Resell**
 - Frequency: **Monthly** (when available; currently transaction level)
 - Reasoning: High volume requires aggregation to reduce invoice count and simplify reconciliation
@@ -232,6 +240,7 @@ If your platform operates using both models, you can enable them simultaneously:
 **Situation**: You have both third-party sellers (commission-based) and your own inventory (buy/resell).
 
 **Recommended configuration**:
+
 - Models: **Commission Agent** + **Buy and Resell**
 - Commission frequency: **Monthly** (for third-party sellers)
 - Self-billing frequency: **Transaction level** (for inventory purchases)
@@ -242,6 +251,7 @@ If your platform operates using both models, you can enable them simultaneously:
 **Situation**: You connect customers with service providers (hotels, tours, activities) and earn a commission.
 
 **Recommended configuration**:
+
 - Model: **Commission Agent**
 - Frequency: **Monthly** with invoicing on the 5th
 - Reasoning: Services may have cancellations/refunds, so waiting until the 5th allows time for adjustments before invoicing
