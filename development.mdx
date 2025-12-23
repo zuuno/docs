@@ -1,94 +1,75 @@
 ---
-title: 'Development'
-description: 'Preview changes locally to update your docs'
+title: "Start developing"
+description: "Get started with the Nocotax API"
 ---
 
-<Info>
-  **Prerequisites**:
-  - Node.js version 19 or higher
-  - A docs repository with a `docs.json` file
-</Info>
+## Get started in three steps
 
-Follow these steps to install and run Mintlify on your operating system.
+Get Nocotax API running locally and make your first API calls.
 
-<Steps>
-<Step title="Install the Mintlify CLI">
-
-```bash
-npm i -g mint
-```
-</Step>
-
-<Step title="Preview locally">
-
-Navigate to your docs directory where your `docs.json` file is located, and run the following command:
-
-```bash
-mint dev
-```
-
-A local preview of your documentation will be available at `http://localhost:3000`.
-
-</Step>
-</Steps>
-
-## Custom ports
-
-By default, Mintlify uses port 3000. You can customize the port Mintlify runs on by using the `--port` flag. For example, to run Mintlify on port 3333, use this command:
-
-```bash
-mint dev --port 3333
-```
-
-If you attempt to run Mintlify on a port that's already in use, it will use the next available port:
-
-```md
-Port 3000 is already in use. Trying 3001 instead.
-```
-
-## Mintlify versions
-
-Please note that each CLI release is associated with a specific version of Mintlify. If your local preview does not align with the production version, please update the CLI:
-
-```bash
-npm mint update
-```
-
-## Validating links
-
-The CLI can assist with validating links in your documentation. To identify any broken links, use the following command:
-
-```bash
-mint broken-links
-```
-
-## Deployment
-
-If the deployment is successful, you should see the following:
-
-<Frame>
-  <img src="/images/checks-passed.png" alt="Screenshot of a deployment confirmation message that says All checks have passed." style={{ borderRadius: '0.5rem' }} />
-</Frame>
-
-## Code formatting
-
-We suggest using extensions on your IDE to recognize and format MDX. If you're a VSCode user, consider the [MDX VSCode extension](https://marketplace.visualstudio.com/items?itemName=unifiedjs.vscode-mdx) for syntax highlighting, and [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) for code formatting.
-
-## Troubleshooting
+### Step 1: Create your Nocotax account and finish the setup process
 
 <AccordionGroup>
-  <Accordion title='Error: Could not load the "sharp" module using the darwin-arm64 runtime'>
-
-    This may be due to an outdated version of node. Try the following:
-    1. Remove the currently-installed version of the CLI: `npm remove -g mint`
-    2. Upgrade to Node v19 or higher.
-    3. Reinstall the CLI: `npm i -g mint`
+  <Accordion title="Create your Nocotax account" icon="rocket">
+    
   </Accordion>
+  <Accordion title="Finish the setup process" icon="palette">
+    Follow the onboarding flow to enter your account details such as the default timezone and currency, the billing information of your own organization, and the tax configuration for your organization.
 
-  <Accordion title="Issue: Encountering an unknown error">
-  
-    Solution: Go to the root of your device and delete the `~/.mintlify` folder. Then run `mint dev` again.
+    <Tip>
+      Unsure of your current tax configuration setup? You can still add/remove tax registrations later on.
+    </Tip>
   </Accordion>
 </AccordionGroup>
 
-Curious about what changed in the latest CLI version? Check out the [CLI changelog](https://www.npmjs.com/package/mintlify?activeTab=versions).
+### Step 2: Send your first API request
+
+<AccordionGroup>
+  <Accordion title="Retrieve your API credentials" icon="copy">
+    By default, all accounts have a total of three API credentials:
+
+    | Type           | Description                                                                                                                                                                                                                                                     |
+    | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | `Account ID`   | An unique ID referencing your account. It's used in the Basic Auth Scheme for API requests as the ID credential.                                                                                                                                                |
+    | `Test API Key` | Authenticate requests on your server when you’re testing in a sandbox. By default, you can use this key to perform any API request without restriction. Reserve this key for testing and development to make sure you don’t accidentally modify your live data. |
+    | `Live API Key` | Authenticate requests on your server when in live mode. Don’t expose this key on a website or embed it in a mobile application. You can only use this key to perform any API request after subscribing to a paid plan                                           |
+
+    Your credentials are stored on the [Developers settings](https://app.nocotax.app/settings/developers/credentials) tab in the dashboard.
+
+    <Tip>
+      Try changing the primary color to see an immediate difference!
+    </Tip>
+  </Accordion>
+  <Accordion title="Create a sample organization in Sandbox" icon="rectangle-terminal">
+    You can begin exploring Nocotax APIs using the HTTPs client of your choice (curl, postman...), along with your API keys (see below).
+
+    Operating in sandbox environment, you don't have to worry about altering production data when doing the following tests.
+
+    1. To create an organization using the Nocotax API, send the following API request
+
+    ```bash
+    curl -X POST https://api.nocotax.app/organizations \
+    -u ${ACCOUNT_ID}:${TEST_API_KEY} \
+    -d 'name=Test Customer' \
+    -d 'roles[]=BUYER' \
+    -d 'billing_address[country]=FR'
+    ```
+
+    2. If everything worked, you should see a response, with a JSON body embeded, containing the ID of the newly created organization:
+
+       ```json
+       {
+       	"id": "org_xxxxxxxxxxxx",
+       	"object": "organization",
+       	// ...
+       }
+       
+       ```
+  </Accordion>
+</AccordionGroup>
+
+
+
+<Note>
+  **Need help?** See our [full API documentation](https://app.nocotax.app/apidoc).
+</Note>
