@@ -1,0 +1,328 @@
+---
+title: "Tax Configuration"
+description: "Configure where your organization is registered for tax purposes to ensure accurate tax calculations and compliance."
+---
+
+## Overview
+
+Tax registrations tell Nocotax where your organization is registered to collect and remit taxes (VAT, GST, sales tax, etc.). This configuration is critical for:
+
+- **Accurate tax calculations** on invoices based on your registration status
+- **Compliance** with local tax regulations
+- **Input tax recovery** on purchases where you're registered
+- **Proper tax reporting** across jurisdictions
+
+## When to configure tax registrations
+
+You should configure your tax registrations:
+
+- **During initial onboarding** when setting up your Nocotax account
+- **When you register** in a new jurisdiction
+- **When your registration type changes** (e.g., moving from standard to OSS registration)
+- **When updating registration numbers** or details
+
+## How to configure tax registrations
+
+### During onboarding
+
+When you first set up your Nocotax account, you'll be prompted to add your tax registrations:
+
+1. Navigate to the onboarding flow
+2. Select the countries where you're tax registered
+3. Choose the registration type (if applicable)
+3. Enter your tax registration number (VAT ID, GST number, etc.)
+5. Save your configuration
+
+### After onboarding
+
+You can update your tax registrations anytime:
+
+1. Go to **Profile Settings** → **Organization **→ **Tax Registrations**
+2. Click **Add Tax Registration**
+3. Select the country / jurisdiction
+4. Choose the appropriate registration type
+4. Enter your registration details
+6. Save changes
+
+<Note>
+  Changes to tax registrations take effect immediately for new invoices only. Existing draft invoices may need to be recreated.
+</Note>
+
+## Registration components
+
+Each tax registration consists of:
+
+### Country/Jurisdiction
+
+The country or region where you're registered. This determines which tax rules apply to your transactions.
+
+### Tax Registration Number
+
+Your official tax identification number:
+
+- **EU countries**: VAT number (e.g., DE123456789)
+- **UK**: VAT registration number
+- **Australia**: ABN (Australian Business Number)
+- **Canada**: GST/HST registration number
+- **US**: Sales tax permit numbers (varies by state)
+
+### Registration Type
+
+Some jurisdictions require you to specify the type of registration. This is particularly important in the EU (see below).
+
+## EU Registration Types
+
+The European Union has several registration schemes that affect how you charge and report VAT. Choosing the correct registration type is crucial for compliance.
+
+### Standard Registration
+
+A standard VAT registration in a specific EU country. This is the traditional registration type where you:
+
+- Register in each country where you exceed registration thresholds
+- Charge local VAT rates to customers in that country
+- File VAT returns in each country separately
+- Can recover input VAT on purchases in that country
+
+**When to use**: When you have a physical presence, warehouse, or significant sales in a specific EU country.
+
+### OSS for EU (One-Stop Shop)
+
+The EU One-Stop Shop allows you to register in one EU country and report VAT on sales to consumers (B2C) across all EU member states.
+
+**Key features**:
+
+- Register in one EU country only
+- Charge destination country VAT rates (where the customer is located)
+- File a single quarterly return covering all EU sales
+- No need for multiple EU registrations
+
+**When to use**:
+
+- You're selling B2C to customers across multiple EU countries
+- You exceed the €10,000 annual distance selling threshold
+- You want simplified compliance across the EU
+
+**Example**: A French company sells software to consumers in Germany, Spain, and Italy. Instead of registering for VAT in each country, they use OSS for EU to report all sales through their French registration.
+
+### OSS for Non-EU
+
+This scheme is for non-EU businesses selling to EU consumers. It allows you to register in one EU country to report and remit VAT on all EU B2C sales.
+
+**Key features**:
+
+- Register through one EU member state (even though you're not based there)
+- Charge destination country VAT rates
+- File quarterly returns in that member state
+- Avoid registering in every EU country where you have customers
+
+**When to use**:
+
+- Your business is based outside the EU
+- You sell digital services, goods, or other products to EU consumers
+- You want a single point of compliance for EU VAT
+
+**Example**: A US-based SaaS company selling to consumers in multiple EU countries registers for OSS in Ireland to handle all EU VAT obligations.
+
+### IOSS (Import One-Stop Shop)
+
+IOSS is specifically for distance sales of imported goods valued at €150 or less from outside the EU to EU consumers.
+
+**Key features**:
+
+- Designed for e-commerce and marketplace operators
+- Collect VAT at point of sale (instead of customs)
+- File monthly returns
+- Simplified customs clearance (no VAT at border)
+
+**When to use**:
+
+- You sell physical goods from outside the EU to EU consumers
+- Order values are €150 or less
+- You want to collect VAT upfront and avoid customs delays
+
+**Example**: A Chinese e-commerce platform selling consumer electronics to EU customers uses IOSS to collect VAT at checkout and streamline delivery.
+
+<Warning>
+  Choosing the wrong registration type can lead to incorrect tax calculations and compliance issues. If you're unsure which registration type applies to your business, consult with a tax advisor.
+</Warning>
+
+## Registration Types by Country
+
+<Snippet file="tax-registration-types-table.mdx" />
+
+## Common scenarios
+
+### Scenario 1: EU business selling B2C across Europe
+
+**Situation**: You're a German company selling software subscriptions to consumers across the EU. You have €50,000 in annual EU sales.
+
+**Configuration**:
+
+- **Germany**: Standard registration (your home country)
+- **EU-wide**: OSS for EU registration (for sales to other EU countries)
+
+**Why**: The standard registration covers your German operations. OSS for EU allows you to handle all other EU B2C sales through a single quarterly return.
+
+### Scenario 2: Non-EU business selling digital services
+
+**Situation**: You're a Canadian SaaS company with customers in France, Netherlands, and Sweden.
+
+**Configuration**:
+
+- **EU**: OSS for Non-EU registration (register in one convenient EU country)
+
+**Why**: As a non-EU business, OSS for Non-EU lets you manage all EU VAT obligations through a single registration point.
+
+### Scenario 3: E-commerce marketplace shipping from China
+
+**Situation**: You operate a marketplace shipping low-value goods from China to EU consumers.
+
+**Configuration**:
+
+- **EU**: IOSS registration
+
+**Why**: IOSS allows you to collect VAT at checkout and clear customs faster, improving delivery times and customer experience.
+
+### Scenario 4: Small EU seller under threshold
+
+**Situation**: You're a Spanish business selling handmade goods online. You have €8,000 in annual sales to other EU countries.
+
+**Configuration**:
+
+- **Spain**: Standard registration only
+
+**Why**: Under the €10,000 EU threshold, you can charge Spanish VAT on all EU sales. No OSS needed.
+
+<Tip>
+  See the FAQ below for more details on the EU small seller scheme.
+</Tip>
+
+## Impact on tax calculations
+
+Your tax registrations directly affect how Nocotax calculates tax:
+
+### For Sales Invoices (B2C)
+
+- **With registration in customer country**: Charge local VAT rate
+- **With OSS registration**: Charge destination country VAT rate
+- **No registration in customer country**: May need to charge your home country rate (depends on thresholds)
+
+### For Sales Invoices (B2B)
+
+- **Customer has valid VAT number**: Typically reverse charge (0% VAT)
+- **Customer has no VAT number**: Treated as B2C
+
+### For Purchase Invoices
+
+- **Registered in supplier country**: Can claim input VAT
+- **Not registered**: Cannot claim input VAT in that country
+
+<Note>
+  Nocotax automatically determines the correct tax treatment based on your registrations, the customer's location, and the transaction type.
+</Note>
+
+## Validation and compliance
+
+Nocotax validates tax registration numbers:
+
+- **EU VAT numbers**: Checked against VIES (VAT Information Exchange System)
+- **Format validation**: Ensures numbers match country-specific formats
+- **Warning indicators**: Flags potentially invalid numbers
+
+When automatic validation is enabled, Nocotax will warn you if:
+
+- A tax number format is incorrect
+- A VAT number cannot be verified in VIES
+- Registration details are missing for required jurisdictions
+
+## Frequently Asked Questions
+
+<AccordionGroup>
+  <Accordion title="What is the EU small seller scheme?">
+    The EU small seller scheme (also called the distance selling threshold) allows businesses with less than €10,000 in annual cross-border B2C sales within the EU to charge their home country VAT rate on all EU sales.
+
+    **How to configure in Nocotax**:
+
+    - Add only your local country's **standard registration**
+    - Do NOT add OSS for EU registration
+    - Nocotax will apply your home country VAT rate to all EU B2C sales
+
+    **When to switch to OSS**: Once you exceed €10,000 in annual cross-border EU sales, you must register for OSS for EU and charge destination country rates. Update your Nocotax configuration at that point.
+  </Accordion>
+  <Accordion title="Can I have multiple registration types in the same country?">
+    Yes. For example, you can  both have a standard registration and an OSS registration in Germany.
+  </Accordion>
+  <Accordion title="What happens if I sell to a country where I'm not registered?">
+    The tax treatment depends on several factors:
+
+    - **B2B sales**: Typically reverse charge applies (customer accounts for VAT)
+    - **B2C sales**: You may need to charge your home country rate or register for VAT
+    - **OSS users**: Can charge destination country rates without local registration
+
+    Nocotax will calculate tax based on applicable rules, but you should monitor your sales volumes to ensure you register when required by local laws.
+  </Accordion>
+  <Accordion title="How do I know which registration type to choose?">
+    Key decision points:
+
+    1. **Are you based in the EU?**
+       - Yes → Use Standard for home country, consider OSS for EU for other countries
+       - No → Use OSS for Non-EU
+    2. **What are you selling?**
+       - Digital services/software → OSS (EU or Non-EU)
+       - Low-value imported goods (≤€150) → IOSS
+       - High-value or local goods → Standard registrations
+    3. **What's your annual EU B2C sales volume?**
+       - Under €10,000 → Can use home country standard only
+       - Over €10,000 → Need OSS or multiple standard registrations
+
+    When in doubt, consult a tax advisor familiar with your specific situation.
+  </Accordion>
+  <Accordion title="Can I change my registration type after setting it up?">
+    Yes, you can update your registrations at any time. If you need to update the type of registration, you'll need to recreate a new registration, as only the tax registration number for a given registration can be updated.
+  </Accordion>
+  <Accordion title="Do I need to configure registrations for countries where I only make purchases?">
+    It depends:
+
+    - If you're registered for VAT in that country and want to claim input tax → Yes, add the registration
+    - If you're not registered there → No need to add it
+
+    Having purchase-only registrations configured allows Nocotax to calculate input VAT you can potentially recover.
+  </Accordion>
+</AccordionGroup>
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Keep registration numbers up to date">
+    Always update your registration numbers in Nocotax immediately when they change. Incorrect numbers on invoices can cause compliance issues and delays in customer payments.
+  </Accordion>
+  <Accordion title="Review registrations quarterly">
+    Set a reminder to review your tax registrations every quarter. This ensures you're registered in all required jurisdictions and using the correct registration types as your business grows.
+  </Accordion>
+  <Accordion title="Document registration dates">
+    Keep records of when each registration became effective. This helps with historical reporting and ensures you apply the correct tax treatment for different time periods.
+  </Accordion>
+  <Accordion title="Monitor sales thresholds">
+    Track your sales volumes in different jurisdictions. Set up alerts when you're approaching registration thresholds so you can register before you're legally required to.
+  </Accordion>
+  <Accordion title="Test in testmode first">
+    When adding new registrations or changing types, test the tax calculation behavior in testmode before applying changes to your livemode environment.
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Tax Calculation Rules" icon="calculator" href="/tax-calculations">
+    Learn how Nocotax determines tax rates
+  </Card>
+  <Card title="Automatic Tax Calculation" icon="wand-magic-sparkles" href="/automatic-tax-calculation">
+    Enable automatic tax on invoices
+  </Card>
+  <Card title="Tax Reporting" icon="file-chart-column" href="/tax-reporting">
+    Generate tax reports and returns
+  </Card>
+  <Card title="API Reference" icon="code" href="https://app.nocotax.app/apidoc#tag/Tax-Registrations">
+    Explore tax registration endpoints
+  </Card>
+</CardGroup>
