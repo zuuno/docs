@@ -1,3 +1,257 @@
 ---
 title: "Tax Registrations"
+description: "Configure tax registrations for external organizations to enable accurate tax calculations."
 ---
+
+## Overview
+
+External organizations can have their own tax registrations, just like your platform. These registrations are crucial for:
+
+- Determining B2B vs B2C tax treatment
+- Enabling reverse charge on cross-border transactions
+- Calculating input tax on purchases
+- Validating tax compliance
+
+## When to add tax registrations
+
+### For CUSTOMER organizations
+
+Add tax registrations when customers are businesses with VAT/tax numbers:
+
+```bash
+curl https://api.nocotax.app/organizations/org_customer_123/tax_registrations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "DE",
+    "number": "DE123456789",
+    "type": "standard"
+  }'
+```
+
+**Why this matters**:
+- Without tax registration → Treated as B2C, charged VAT
+- With valid tax registration → B2B treatment, often reverse charge (0% VAT)
+
+### For MERCHANT organizations
+
+Add tax registrations for suppliers based on your platform model:
+
+**Undisclosed agents (buy/resell)**:
+Most transactions are B2B with reverse charge on cross-border purchases, and charge local tax on domestic transactions. Use `registration_type: standard`:
+
+```bash
+curl https://api.nocotax.app/organizations/org_supplier_456/tax_registrations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "FR",
+    "number": "FR98765432109",
+    "type": "standard"
+  }'
+```
+
+**Traditional marketplaces (commission agent)**:
+Depends on whether merchants sell B2C through your platform. They may need multiple registration types if selling across borders. See [Tax Registrations Configuration](/taxes/registrations/eu-types) for details on OSS and other schemes.
+
+## Registration types for external organizations
+
+### CUSTOMER role: Input tax only
+
+Customers don't bill through your platform - they only receive invoices from you. Use `standard` registration type:
+
+```bash
+# B2B customer
+curl https://api.nocotax.app/organizations/org_customer_123/tax_registrations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -d '{
+    "country": "IT",
+    "number": "IT12345678901",
+    "type": "standard"
+  }'
+```
+
+This enables:
+- Reverse charge on eligible transactions
+- Input tax calculation (though not directly relevant for customers)
+- B2B invoice treatment
+
+### MERCHANT role: Depends on business model
+
+Merchants may need different registration types based on how they operate:
+
+**Standard registration** (most common):
+```bash
+curl https://api.nocotax.app/organizations/org_supplier_456/tax_registrations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -d '{
+    "country": "ES",
+    "number": "ES12345678Z",
+    "type": "standard"
+  }'
+```
+
+**OSS or other schemes**: If merchants on a traditional marketplace sell B2C across borders, they may have OSS registrations. See [Tax Registrations Configuration](/taxes/registrations/eu-types) for registration type details.
+
+<Note>
+For undisclosed agents, merchants typically only need standard registrations since transactions are B2B between your platform and the supplier.
+</Note>
+
+## Listing organization tax registrations
+
+```bash
+# Get all registrations for an organization
+curl https://api.nocotax.app/organizations/org_supplier_456/tax_registrations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY}
+
+# Get specific registration
+curl https://api.nocotax.app/organizations/org_supplier_456/tax_registrations/taxreg_abc123 \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY}
+```
+
+## Updating tax registrations
+
+```bash
+curl https://api.nocotax.app/organizations/org_supplier_456/tax_registrations/taxreg_abc123 \
+  -X PATCH \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "number": "DE987654321"
+  }'
+```
+
+## Deleting tax registrations
+
+```bash
+curl https://api.nocotax.app/organizations/org_supplier_456/tax_registrations/taxreg_abc123 \
+  -X DELETE \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+```
+
+## Common scenarios
+
+### Scenario 1: B2B customer in EU
+
+```bash
+# Create organization
+curl https://api.nocotax.app/v1/organizations \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "ownership": "external",
+    "role": "CUSTOMER",
+    "name": "German Business GmbH",
+    "billing_address": {"country": "DE"}
+  }'
+
+# Add tax registration
+curl https://api.nocotax.app/v1/tax_registrations \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "organization_id": "org_created_above",
+    "country": "DE",
+    "tax_number": "DE123456789",
+    "registration_type": "standard"
+  }'
+```
+
+Result: Cross-border sales to this customer will use reverse charge (0% VAT).
+
+### Scenario 2: Marketplace seller (merchant)
+
+```bash
+# Create seller organization
+curl https://api.nocotax.app/v1/organizations \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "ownership": "external",
+    "role": "MERCHANT",
+    "name": "Seller Shop Ltd",
+    "billing_address": {"country": "FR"}
+  }'
+
+# Add standard VAT registration
+curl https://api.nocotax.app/v1/tax_registrations \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "organization_id": "org_seller_created",
+    "country": "FR",
+    "tax_number": "FR98765432109",
+    "registration_type": "standard"
+  }'
+```
+
+### Scenario 3: Buy/resell supplier
+
+```bash
+# Supplier organization
+curl https://api.nocotax.app/v1/organizations \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "ownership": "external",
+    "role": "MERCHANT",
+    "name": "Wholesale Supplier Inc",
+    "billing_address": {"country": "NL"}
+  }'
+
+# Add registration (B2B with your platform)
+curl https://api.nocotax.app/v1/tax_registrations \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "organization_id": "org_supplier_created",
+    "country": "NL",
+    "tax_number": "NL123456789B01",
+    "registration_type": "standard"
+  }'
+```
+
+## Impact on invoicing
+
+Tax registrations directly affect invoice tax calculations:
+
+### With tax registration (B2B)
+```
+Your Platform (FR) → Invoice → Customer (DE, has VAT number)
+Result: Reverse charge, 0% VAT
+```
+
+### Without tax registration (B2C)
+```
+Your Platform (FR) → Invoice → Customer (DE, no VAT number)
+Result: VAT charged at appropriate rate
+```
+
+See [Managing Taxes on Invoices](/invoices/taxes) for detailed tax calculation rules.
+
+
+## Best practices
+
+- Always add tax registrations for B2B customers to enable reverse charge
+- Use `standard` registration type for CUSTOMER organizations
+- For MERCHANT organizations, registration type depends on your business model
+- Keep registrations up to date - invalid numbers affect tax treatment
+- Don't add registrations for B2C customers (individuals without tax numbers)
+
+## Further reading
+
+For comprehensive information on registration types:
+- [Tax Registrations Configuration](/taxes/registrations/eu-types) - Detailed guide on registration types and schemes
+- [Platform Models](/platform-models) - Understand commission agent vs buy/resell
+- [Undisclosed Agent Flow](/undisclosed-agents/overview) - B2B dynamics in buy/resell model
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Tax Registrations Overview" icon="building-flag" href="/taxes/registrations/eu-types">
+    Complete guide on registration types
+  </Card>
+  <Card title="Managing Taxes" icon="calculator" href="/invoices/taxes">
+    How tax is calculated on invoices
+  </Card>
+  <Card title="External Organizations" icon="building" href="/external-organizations">
+    Managing customers and merchants
+  </Card>
+  <Card title="API Reference" icon="code" href="https://app.nocotax.app/apidoc#tag/Tax-Registrations">
+    Tax Registrations API
+  </Card>
+</CardGroup>
