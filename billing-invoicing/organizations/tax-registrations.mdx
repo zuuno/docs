@@ -135,23 +135,21 @@ curl https://api.nocotax.app/organizations/org_supplier_456/tax_registrations/ta
 
 ```bash
 # Create organization
-curl https://api.nocotax.app/v1/organizations \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl https://api.nocotax.app/organizations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
   -d '{
-    "ownership": "external",
-    "role": "CUSTOMER",
+    "roles": ["BUYER"],
     "name": "German Business GmbH",
     "billing_address": {"country": "DE"}
   }'
 
 # Add tax registration
-curl https://api.nocotax.app/v1/tax_registrations \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl https://api.nocotax.app/organizations/org_created_above/tax_registrations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
   -d '{
-    "organization_id": "org_created_above",
     "country": "DE",
-    "tax_number": "DE123456789",
-    "registration_type": "standard"
+    "number": "DE123456789",
+    "type": "standard"
   }'
 ```
 
@@ -161,47 +159,53 @@ Result: Cross-border sales to this customer will use reverse charge (0% VAT).
 
 ```bash
 # Create seller organization
-curl https://api.nocotax.app/v1/organizations \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl https://api.nocotax.app/organizations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
   -d '{
-    "ownership": "external",
-    "role": "MERCHANT",
+    "roles": ["MERCHANT"],
     "name": "Seller Shop Ltd",
     "billing_address": {"country": "FR"}
   }'
 
 # Add standard VAT registration
-curl https://api.nocotax.app/v1/tax_registrations \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl https://api.nocotax.app/organization/org_created_above/tax_registrations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
   -d '{
-    "organization_id": "org_seller_created",
     "country": "FR",
-    "tax_number": "FR98765432109",
-    "registration_type": "standard"
+    "number": "FR98765432109",
+    "type": "standard"
   }'
+
+# Add OSS VAT registration for cross-border EU B2C sales
+curl https://api.nocotax.app/organization/org_created_above/tax_registrations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -d '{
+    "country": "FR",
+    "number": "FR98765432109",
+    "type": "oss_eu"
+  }'
+
 ```
 
 ### Scenario 3: Buy/resell supplier
 
 ```bash
 # Supplier organization
-curl https://api.nocotax.app/v1/organizations \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl https://api.nocotax.app/organizations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
   -d '{
-    "ownership": "external",
-    "role": "MERCHANT",
+    "roles": ["MERCHANT"],
     "name": "Wholesale Supplier Inc",
     "billing_address": {"country": "NL"}
   }'
 
 # Add registration (B2B with your platform)
-curl https://api.nocotax.app/v1/tax_registrations \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+curl https://api.nocotax.app/organization/org_supplier_created/tax_registrations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
   -d '{
-    "organization_id": "org_supplier_created",
     "country": "NL",
-    "tax_number": "NL123456789B01",
-    "registration_type": "standard"
+    "number": "NL123456789B01",
+    "standard": "standard"
   }'
 ```
 
