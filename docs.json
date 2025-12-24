@@ -40,7 +40,6 @@
                   "billing-invoicing/organizations/tax-registrations"
                 ]
               },
-              "essentials/settings",
               {
                 "group": "Invoices",
                 "expanded": false,
