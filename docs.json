@@ -30,6 +30,26 @@
             ]
           },
           {
+            "group": "Billing and invoicing",
+            "pages": [
+              {
+                "group": "Organizations",
+                "expanded": false,
+                "pages": [
+                  "essentials/navigation"
+                ]
+              },
+              "essentials/settings",
+              {
+                "group": "Invoices",
+                "expanded": false,
+                "pages": [
+                  "essentials/navigation"
+                ]
+              }
+            ]
+          },
+          {
             "group": "Invoicing",
             "pages": [
               "essentials/settings",

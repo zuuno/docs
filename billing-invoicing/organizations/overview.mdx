@@ -1,0 +1,277 @@
+---
+title: "Overview"
+description: "Learn about the core concept of organizations in Nocotax and how they represent business entities."
+---
+
+## What is an organization?
+
+An organization in Nocotax represents a business entity - either a company or an individual person. Every organization can participate in transactions as either a buyer or seller of goods and services.
+
+Organizations are the foundation of invoicing in Nocotax:
+- Every invoice has a **supplier** (seller) and **customer** (buyer)
+- Both are represented as organizations
+- Organizations track tax registrations, addresses, and balances
+
+## Organization types: self vs external
+
+Every organization has an `ownership` field that determines its type:
+
+### Your organizations (ownership=self)
+
+This are **your platform's business entities**. You currently have one self organization per mode (testmode and livemode).
+
+```bash
+# Your organization is automatically created during onboarding
+curl https://api.nocotax.app/organizations?ownership=self \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY}
+```
+
+**Characteristics**:
+- Represents your company
+- Only one per mode (for the moment)
+- Cannot be deleted
+- Where you configure your tax registrations
+- Your identity on invoices
+
+### External organizations (ownership=external)
+
+These are **the entities you do business with** - your customers and suppliers.
+
+```bash
+# Create an external organization
+curl https://api.nocotax.app/organizations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "roles": ["BUYER"],
+    "name": "Acme Corp",
+    "billing_address": {
+      "country": "FR"
+    }
+  }'
+```
+
+**Characteristics**:
+- Represent customers, suppliers, partners
+- Unlimited number
+- Can be created, updated, deleted
+- Each has specific roles
+- Can have their own tax registrations
+
+## Organization roles
+
+External organizations have roles that define their relationship with your platform:
+
+### BUYER role
+
+Organizations you sell to. They buy from your platform.
+
+```bash
+curl https://api.nocotax.app/organizations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "roles": ["BUYER"],
+    "name": "Customer Inc",
+    "billing_address": {
+      "country": "FR"
+    }
+  }'
+```
+
+**Used for**:
+- Sales invoices (you invoice them)
+- Tracking accounts receivable (money owed to you)
+- Customer management
+
+### MERCHANT role
+
+Organizations you buy from - your suppliers, vendors, or marketplace sellers.
+
+```bash
+curl https://api.nocotax.app/organizations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "roles": ["MERCHANT"],
+    "name": "Supplier Co",
+    "billing_address": {
+      "country": "FR"
+    }
+  }'
+```
+
+**Used for**:
+- Purchase invoices (they invoice you, or you self-bill)
+- Tracking accounts payable (money you owe them)
+- Supplier management
+- Marketplace seller payouts
+
+### Both roles
+
+An organization can have both CUSTOMER and MERCHANT roles simultaneously:
+
+```bash
+curl https://api.nocotax.app/organizations \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "roles": ["CUSTOMER", "MERCHANT"],
+    "name": "Partner Company",
+    "billing_address": {
+      "country": "FR"
+    }
+  }'
+```
+
+**Example**: A business partner where you both buy services from them and sell services to them.
+
+<Note>
+The role determines what the organization **can** do, not what they're actively doing. You can set the role even before any transactions occur.
+</Note>
+
+## Organizations in invoicing
+
+Organizations play two positions on every invoice: supplier and customer.
+
+### The supplier_id
+
+The organization providing goods or services (the seller).
+
+**In sales invoices**: Usually your platform
+```bash
+curl https://api.nocotax.app/invoices \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "customer_id": "org_customer_123", // Supplier ID is your platform
+    "items": [...]
+  }'
+```
+
+**In purchase invoices**: The external supplier
+```bash
+curl https://api.nocotax.app/invoices \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "purchases",
+    "supplier_id": "org_supplier_456", // Customer ID is your platform
+    "items": [...]
+  }'
+```
+
+### The customer_id
+
+The organization receiving goods or services (the buyer).
+
+**In sales invoices**: Your customer
+```bash
+# supplier_id = your platform
+# customer_id = your customer
+```
+
+**In purchase invoices**: Your platform
+```bash
+# supplier_id = external supplier
+# customer_id = your platform
+```
+
+### Role vs position
+
+| Role | Can be supplier_id? | Can be customer_id? |
+|------|---------------------|---------------------|
+| Your platform (self) | ✓ Yes (sales) | ✓ Yes (purchases) |
+| BUYER | ✗ No* | ✓ Yes |
+| MERCHANT | ✓ Yes | ✗ Yes** |
+| Both roles | ✓ Yes | ✓ Yes |
+
+*Unless the organization has both roles
+** In commission model
+
+<Warning>
+An organization must have the appropriate role for its position on the invoice:
+- To be a `supplier_id`: needs MERCHANT role (or be your platform)
+- To be a `customer_id`: needs BUYER or MERCHANT role (or be your platform)
+</Warning>
+
+
+## Organization hierarchy
+
+```
+Account
+  ├── Mode: testmode
+  │     ├── Organizations (ownership=self) - Your platform
+  │     └── Organizations (ownership=external)
+  │           ├── BUYER orgs
+  │           ├── MERCHANT orgs
+  │           └── Dual-role orgs
+  │
+  └── Mode: livemode
+        ├── Organizations (ownership=self) - Your platform
+        └── Organizations (ownership=external)
+              ├── BUYER orgs
+              ├── MERCHANT orgs
+              └── Dual-role orgs
+```
+
+Data is completely isolated between testmode and livemode.
+
+## Common patterns
+
+### E-commerce platform
+- Your platform: `ownership=self`
+- Customers: `ownership=external`, `role=BUYER`
+- Invoices: You → Customers (sales flow)
+
+### Marketplace (commission agent)
+- Your platform: `ownership=self`
+- Sellers: `ownership=external`, `role=MERCHANT`
+- Buyers: `ownership=external`, `role=BUYER`
+- Commission invoices: Your platform → Sellers (commission flow)
+- Optional: Sellers → Buyers (white label invoicing)
+
+### Buy and resell (undisclosed agent)
+- Your platform: `ownership=self`
+- Suppliers: `ownership=external`, `role=MERCHANT`
+- Customers: `ownership=external`, `role=CUSTOMER`
+- Purchase invoices: Suppliers → Your platform (purchases flow)
+- Sales invoices: Your platform → Customers (sales flow)
+
+### Service platform with suppliers
+- Your platform: `ownership=self`
+- Service providers: `ownership=external`, `role=MERCHANT`
+- Customers: `ownership=external`, `role=CUSTOMER`
+- May need dual-role if providers also buy services from you
+
+## Key attributes
+
+Every organization can have:
+
+| Attribute | Description |
+|-----------|-------------|
+| `name` | Full legal entity name (business or person) |
+| `billing_address` | Invoicing address |
+| `tax_registrations[]` | List of tax registrations |
+
+See [Tax Registrations](/billing-invoicing/organizations/tax-registrations) for detailed attribute information.
+
+## Best practices
+
+- Set clear, descriptive names for easy identification
+- Assign roles when creating organizations, even before first transaction
+- Use dual roles for partners you both buy from and sell to
+- Keep tax numbers and addresses updated
+- Use metadata to link to external systems (Stripe, CRM, etc.)
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Tax Registrations" icon="building-flag" href="/organizations/tax-registrations">
+    Configure tax registrations for organizations
+  </Card>
+  <Card title="API Reference" icon="code" href="https://app.nocotax.app/apidoc#tag/Organizations">
+    Organizations API documentation
+  </Card>
+</CardGroup>
