@@ -17,6 +17,14 @@
             "group": "Getting started",
             "pages": [
               "index",
+              {
+                "group": "Account Configuration",
+                "expanded": false,
+                "pages": [
+                  "tax-configuration",
+                  "platform-models"
+                ]
+              },
               "development",
               "quickstart"
             ]
