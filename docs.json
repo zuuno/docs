@@ -22,10 +22,16 @@
             ]
           },
           {
-            "group": "Customization",
+            "group": "Invoicing",
             "pages": [
               "essentials/settings",
-              "essentials/navigation"
+              {
+                "group": "nav",
+                "expanded": false,
+                "pages": [
+                  "essentials/navigation"
+                ]
+              }
             ]
           },
           {
