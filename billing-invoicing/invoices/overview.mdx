@@ -1,3 +1,368 @@
 ---
 title: "Invoices Overview"
+description: "Understand how invoices work in Nocotax and how to use them for your platform's business transactions."
 ---
+
+## What is an invoice?
+
+An invoice is a commercial document issued by a seller to a buyer that records a transaction between two parties. In Nocotax, invoices are the primary way to document:
+
+- Sales to customers (revenue)
+- Purchases from suppliers (costs)
+- Commission arrangements between platforms and merchants
+
+Every invoice in Nocotax represents a transaction between two organizations: a **supplier** (the party providing goods or services) and a **customer** (the party receiving them).
+
+## Invoice flows
+
+Nocotax supports three invoice flows that determine the direction and purpose of the invoice:
+
+### Sales flow
+
+The **sales flow** (`flow=sales`) represents invoices your platform issues to customers for goods or services you've sold. This is your outbound invoicing.
+
+```
+Your Platform (supplier) → Invoice → Customer
+```
+
+**Common use cases**:
+- SaaS subscription invoices
+- E-commerce order invoices
+- Service booking confirmations
+- Product sales
+
+**Key characteristics**:
+- Increases your accounts receivable (AR)
+- Represents revenue for your business
+- You are the supplier, customer is the buyer
+- You charge tax (if applicable)
+
+**Example**: Your platform sells a monthly subscription for €99 to a customer.
+
+```javascript
+const invoice = await nocotax.invoices.create({
+  flow: 'sales',
+  currency: 'EUR',
+  customer_id: 'org_customer_123',  // Your customer's organization ID
+  items: [
+    {
+      description: 'Monthly Subscription',
+      quantity: 1,
+      unit_amount: 9900
+    }
+  ]
+});
+```
+
+### Purchases flow
+
+The **purchases flow** (`flow=purchases`) represents invoices for goods or services you've purchased from suppliers. This is your inbound invoicing.
+
+```
+Supplier → Invoice → Your Platform (customer)
+```
+
+**Common use cases**:
+- Recording supplier invoices
+- Self-billing for marketplace payouts
+- Documenting costs and expenses
+- Tracking amounts owed to suppliers
+
+**Key characteristics**:
+- Increases your accounts payable (AP)
+- Represents costs for your business
+- Supplier is the issuer, you are the customer
+- You may be able to claim input tax
+
+**Example**: You receive an invoice from a hosting provider for €500.
+
+```javascript
+const invoice = await nocotax.invoices.create({
+  flow: 'purchases',
+  supplier_id: 'org_hosting_provider', // Your supplier's organization
+  items: [
+    {
+      description: 'Cloud Hosting - January',
+      quantity: 1,
+      unit_amount: 50000
+    }
+  ]
+});
+```
+
+### Commissions flow
+
+The **commissions flow** is a special case of the purchases flow used specifically for recording commission payments to merchants or partners on your platform.
+
+```
+Your Platform (supplier) → Commission Invoice → Merchant (customer)
+```
+
+**Common use cases**:
+- Marketplace seller commissions
+- Affiliate partner payouts
+- Referral fee payments
+- Revenue share arrangements
+
+**Key characteristics**:
+- Same as purchases flow (`flow=commissions`)
+- Represents commissions owed to merchants
+- Typically generated automatically based on sales
+- Can be aggregated by time period
+
+**Example**: A seller on your marketplace is billed €150 in commissions this month.
+
+```javascript
+const invoice = await nocotax.invoices.create({
+  flow: 'purchases',
+  supplier_id: 'org_merchant_456',   // The merchant
+  customer_id: 'org_your_platform',  // You
+  items: [
+    {
+      description: 'Commission - January 2025',
+      quantity: 1,
+      unit_amount: 15000
+    }
+  ]
+});
+```
+
+## Default vs explicit organization IDs
+
+When creating invoices, you can choose to specify organization IDs explicitly or let Nocotax use default values based on your account configuration.
+
+### Default IDs (recommended)
+
+If you omit `supplier_id` or `customer_id`, Nocotax will use default values based on the flow:
+
+| Flow | Default supplier_id | Default customer_id |
+|------|-------------------|-------------------|
+| `sales` | Your organization (self) | Must be specified |
+| `purchases` | Must be specified | Your organization (self) |
+
+```javascript
+// Sales invoice - supplier_id defaults to your organization
+const invoice = await nocotax.invoices.create({
+  flow: 'sales',
+  currency: 'EUR',
+  // supplier_id: defaults to your organization
+  customer_id: 'org_customer_123',
+  // ...
+});
+
+// Purchase invoice - customer_id defaults to your organization
+const invoice = await nocotax.invoices.create({
+  flow: 'purchases',
+  currency: 'EUR',
+  supplier_id: 'org_supplier_456',
+  // customer_id: defaults to your organization
+  // ...
+});
+```
+
+## Invoice structure
+
+Every invoice contains the following key components:
+
+### Header information
+
+Basic invoice details:
+- **Flow**: Direction of the invoice (sales/purchases/commissions)
+- **Supplier**: Organization providing goods/services
+- **Customer**: Organization receiving goods/services
+- **Number**: Sequential invoice number (assigned when finalized)
+- **Date**: Invoice issue date (set when finalized)
+- **Currency**: Three-letter ISO currency code
+
+### Line items
+
+Individual products or services on the invoice:
+- **Description**: What's being sold
+- **Quantity**: How many units
+- **Unit amount**: Price per unit (in smallest currency unit)
+- **Tax code**: Category for tax calculation (optional)
+- **Tax amount**: Calculated tax for this line (if applicable)
+
+### Totals
+
+Calculated amounts:
+- **Subtotal**: Sum of all line items before tax
+- **Tax amount**: Total tax across all line items
+- **Total**: Final amount including tax
+- **Amount remaining**: How much is still unpaid
+
+### Payment information
+
+- **Payment terms**: Days until payment is due
+- **Due date**: When payment is expected
+- **Payment status**: OPEN, DUE, PAID, PARTIALLY_PAID
+
+### Tax details
+
+- **Tax registrations**: Which registrations apply
+- **Tax calculations**: Breakdown by tax rate/jurisdiction
+- **Automatic tax**: Whether tax was calculated automatically
+
+## Multi-currency support
+
+Nocotax supports invoices in multiple currencies. Each invoice specifies its currency:
+
+**Important considerations**:
+- All amounts on an invoice must be in the same currency
+- Currency cannot be changed after invoice creation
+
+## Invoice numbering
+
+Invoice numbers are assigned automatically when you finalize an invoice. Nocotax ensures:
+
+- **Sequential numbering**: Each invoice gets the next available number
+- **Unique numbers**: No duplicates within your account
+- **Per-flow numbering**: Sales and purchases can have separate sequences
+- **Format customization**: Configure your numbering format in settings
+
+Example sequence:
+```
+INV-2025-001
+INV-2025-002
+INV-2025-003
+...
+```
+
+<Note>
+Draft invoices don't have numbers. Numbers are assigned only when you finalize the invoice.
+</Note>
+
+## Amounts in smallest currency unit
+
+All monetary values in Nocotax are specified in the smallest currency unit:
+
+| Currency | Smallest Unit | Example |
+|----------|---------------|---------|
+| EUR, USD | Cents | €10.50 = 1050 |
+| GBP | Pence | £25.99 = 2599 |
+| JPY | Yen (no subunit) | ¥1,000 = 1000 |
+
+```javascript
+const invoice = await nocotax.invoices.create({
+  flow: 'sales',
+  currency: 'EUR',
+  items: [
+    {
+      description: 'Product',
+      quantity: 2,
+      unit_amount: 2950  // €29.50 each
+    }
+  ]
+});
+// Subtotal: €59.00 (5900 cents)
+```
+
+This approach eliminates rounding errors and ensures precise calculations.
+
+## Working with line items
+
+Invoices support several line items per invoice, which you can include directly at creation (max 10):
+
+```javascript
+const invoice = await nocotax.invoices.create({
+  flow: 'sales',
+  supplier_id: 'org_your_platform',
+  customer_id: 'org_customer_123',
+  currency: 'EUR',
+  items: [
+    {
+      description: 'Enterprise Plan - Annual',
+      quantity: 1,
+      unit_amount: 99000,
+      tax_code: 'saas'
+    },
+    {
+      description: 'Additional Storage (100GB)',
+      quantity: 5,
+      unit_amount: 1000,
+      tax_code: 'saas'
+    },
+    {
+      description: 'Premium Support',
+      quantity: 1,
+      unit_amount: 25000,
+      tax_code: 'services'
+    }
+  ]
+});
+```
+
+### Line item attributes
+
+Each line item can include:
+- `description` **(required)**: Text description of the item
+- `quantity` **(required)**: Number of units
+- `unit_amount` **(required)**: Price per unit in smallest currency unit
+- `tax_code` *(optional)*: Tax category for automatic tax calculation
+- `metadata` *(optional)*: Custom key-value data for your own use
+
+## Common patterns
+
+### Pattern 1: Simple sales invoice
+
+```javascript
+// Invoice a customer for a one-time purchase
+const invoice = await nocotax.invoices.create({
+  flow: 'sales',
+  customer_id: 'org_customer_123',
+  currency: 'EUR',
+  automatic_tax_calculation: { enabled: true },
+  items: [
+    {
+      description: 'Consulting Services - 10 hours',
+      quantity: 10,
+      unit_amount: 15000,
+      tax_code: 'consulting'
+    }
+  ]
+});
+
+await nocotax.invoices.finalize(invoice.id);
+```
+
+### Pattern 2: Recording a supplier invoice
+
+```javascript
+// Record an invoice you received from a supplier
+const invoice = await nocotax.invoices.create({
+  flow: 'purchases',
+  supplier_id: 'org_supplier_789',
+  currency: 'USD',
+  items: [
+    {
+      description: 'Office Supplies',
+      quantity: 1,
+      unit_amount: 45000
+    }
+  ]
+});
+
+await nocotax.invoices.finalize(invoice.id);
+await nocotax.invoices.attachPayment(invoice.id);
+```
+
+<Tip>
+You can use negative amounts in line items to represent deductions, credits, or refunds. If you need to manage documents for cancellations, refunds or chargebacks, use credit notes instead.
+</Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Invoice Lifecycle" icon="arrow-progress" href="/billing-invoicing/invoices/lifecycle">
+    Learn about invoice statuses and state transitions
+  </Card>
+  <Card title="Managing Taxes" icon="calculator" href="/billing-invoicing/invoices/taxes">
+    Configure tax calculations on invoices
+  </Card>
+  <Card title="Payments" icon="credit-card" href="/billing-invoicing/invoices/payments">
+    Track and reconcile invoice payments
+  </Card>
+  <Card title="API Reference" icon="code" href="https://app.nocotax.app/apidoc#tag/Invoices">
+    Explore the complete invoices API
+  </Card>
+</CardGroup>
