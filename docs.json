@@ -44,7 +44,7 @@
                 "group": "Invoices",
                 "expanded": false,
                 "pages": [
-                  "essentials/navigation"
+                  "billing-invoicing/invoices/overview"
                 ]
               }
             ]
