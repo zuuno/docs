@@ -53,12 +53,17 @@
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Implementation Guides",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              {
+                "group": "Undisclosed Agents",
+                "expanded": false,
+                "pages": [
+                  "/undisclosed-agents/overview",
+                  "/undisclosed-agents/customer-invoicing",
+                  "/undisclosed-agents/self-billing"
+                ]
+              }
             ]
           }
         ]
