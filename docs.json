@@ -44,20 +44,10 @@
                 "group": "Invoices",
                 "expanded": false,
                 "pages": [
-                  "billing-invoicing/invoices/overview"
-                ]
-              }
-            ]
-          },
-          {
-            "group": "Invoicing",
-            "pages": [
-              "essentials/settings",
-              {
-                "group": "nav",
-                "expanded": false,
-                "pages": [
-                  "essentials/navigation"
+                  "billing-invoicing/invoices/overview",
+                  "billing-invoicing/invoices/lifecycle",
+                  "billing-invoicing/invoices/taxes",
+                  "billing-invoicing/invoices/payments"
                 ]
               }
             ]
@@ -69,14 +59,6 @@
               "essentials/code",
               "essentials/images",
               "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
             ]
           }
         ]
