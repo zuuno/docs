@@ -1,0 +1,132 @@
+---
+title: "Invoices Lifecycle"
+description: "Understand invoice states and how to manage them from creation to payment."
+---
+
+## Invoice states
+
+### DRAFT
+
+Invoice is being prepared. Can be modified or deleted.
+
+- No invoice number or date
+- Does not affect AP/AR balances
+- Can update amounts, line items, tax
+- Can be deleted
+
+### FINALIZED
+
+Invoice is issued and official. Cannot be modified.
+
+- Has sequential invoice number
+- Has official invoice date
+- Due date calculated (if payment_terms provided)
+- Affects AP/AR balances
+- Immutable - corrections require credit notes
+
+### CANCELLED
+
+Invoice is voided (not yet implemented).
+
+## State transitions
+
+```
+DRAFT → finalize() → FINALIZED
+```
+
+### Creating an invoice
+
+All invoices start as DRAFT:
+
+```bash
+curl https://api.nocotax.app/invoices \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "items": [
+      {
+        "description": "Monthly Subscription",
+        "quantity": 1,
+        "unit_extratax_amount": 9900
+      }
+    ]
+  }'
+```
+
+### Finalizing an invoice
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.nocotax.app/invoices/inv_123/finalize \
+  -X POST \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY}
+```
+
+</CodeGroup>
+
+What happens on finalization:
+
+1. Invoice number assigned
+2. Invoice date set to today
+3. Due date calculated (from payment_terms)
+4. AP/AR balances updated
+5. Invoice locked from changes
+
+<Warning>
+  Finalization is irreversible. Review carefully before finalizing.
+</Warning>
+
+## Payment status
+
+Finalized invoices track payment status:
+
+| Status   | Description                              |
+| -------- | ---------------------------------------- |
+| **OPEN** | Due date not yet passed, unpaid          |
+| **DUE**  | Past due date, unpaid, or partially paid |
+| **PAID** | Fully paid                               |
+
+The `amount_remaining` field shows what's still owed.
+
+## Working with finalized invoices
+
+### Attaching payments
+
+<Card title="Invoice Payments" icon="sack-dollar" href="/billing-invoicing/invoices/payments">
+  
+</Card>
+
+### Correcting errors
+
+Issue a credit note for finalized invoices:
+
+```bash
+curl https://api.nocotax.app/credit_notes \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "invoice_id": 'inv_123',
+    "items": [
+      {
+        "description": "Monthly Subscription",
+        "quantity": 1,
+        "unit_extratax_amount": 9900
+      }
+    ]
+  }'
+```
+
+## Best practices
+
+- Review drafts carefully before finalizing
+- Finalize invoices promptly - don't leave in DRAFT
+- Use payment_terms for automatic due date calculation
+- Issue credit notes for corrections, never modify finalized invoices
+- Track payment status for automated reminders
