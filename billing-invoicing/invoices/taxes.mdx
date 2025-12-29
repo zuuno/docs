@@ -1,0 +1,527 @@
+---
+title: "Managing Taxes on Invoices"
+description: "Learn how to configure and calculate taxes on invoices, from automatic calculations to manual control."
+---
+
+## Overview
+
+Nocotax provides flexible tax management for invoices, allowing you to either let the system automatically calculate taxes based on registrations and rules, or manually specify tax amounts for complete control.
+
+Proper tax configuration ensures:
+- Compliance with local tax regulations
+- Accurate tax collection and reporting
+- Correct input tax recovery on purchases
+- Simplified tax filing and reconciliation
+
+## Tax calculation approaches
+
+Nocotax supports two approaches to tax calculation on invoices:
+
+### Automatic tax calculation
+
+The system automatically determines applicable tax rates and calculates tax amounts based on:
+- Your tax registrations
+- Customer/supplier tax registrations
+- Transaction type (B2B vs B2C)
+- Product tax codes
+- Applicable tax rules
+
+**When to use**: Most scenarios, especially for platforms selling across multiple jurisdictions.
+
+### Manual tax calculation
+
+You specify exact tax amounts for each line item, overriding automatic calculation.
+
+**When to use**: Special cases, legacy data migration, or when you have custom tax calculation logic.
+
+## Automatic tax calculation
+
+Enable automatic tax calculation when creating an invoice:
+
+```javascript
+const invoice = await nocotax.invoices.create({
+  flow: 'sales',
+  supplier_id: 'org_your_platform',
+  customer_id: 'org_customer_123',
+  currency: 'EUR',
+  automatic_tax_calculation: {
+    enabled: true  // Enable automatic tax
+  },
+  items: [
+    {
+      description: 'SaaS Subscription',
+      quantity: 1,
+      unit_amount: 9900,
+      tax_code: 'digital_services' // Tax category
+    }
+  ]
+});
+```
+
+### How automatic calculation works
+
+When `automatic_tax_calculation.enabled: true`, Nocotax:
+
+1. **Identifies the tax jurisdiction**: Based on supplier and customer locations
+2. **Determines tax registration status**: Checks if you're registered where tax applies
+3. **Applies tax rules**: Uses B2B vs B2C rules, reverse charge, exemptions, etc.
+4. **Calculates rates**: Applies the correct tax rate for each line item
+5. **Computes totals**: Calculates line-level and invoice-level tax amounts
+
+### Tax codes
+
+Tax codes categorize your products or services for tax purposes. They help Nocotax apply the correct tax treatment:
+
+```json
+items: [
+  {
+    description: 'Software License',
+    quantity: 1,
+    unit_extratax_amount: 10000,
+    product: {
+      tax_code: 'S10000000'  // Digital services
+    }
+  },
+  {
+    description: 'General furniture',
+    quantity: 3,
+    unit_extratax_amount: 999,
+    product: {
+      tax_code: 'P10000000'  // Physical goods
+    }
+  },
+  {
+    description: 'Consulting',
+    quantity: 1,
+    unit_extratax_amount: 50000,
+    product: {
+      tax_code: 'S10000000'  // Services
+    }
+  }
+]
+```
+
+<Note>
+Tax codes are optional when automatic calculation is enabled. If omitted, Nocotax uses the default tax treatment for your business type (digital goods)
+</Note>
+
+### Tax determination factors
+
+Automatic tax calculation considers multiple factors:
+
+#### 1. Supplier tax registrations
+
+Your tax registrations determine where you can charge tax:
+
+```javascript
+// You're registered for VAT in France and Germany
+// Sales to French customers: Charge French VAT
+// Sales to German customers: Charge German VAT
+// Sales to Spanish customers: Depends on registration and thresholds
+```
+
+See [Tax Registrations Configuration](/tax-configuration) for setup details.
+
+#### 2. Customer tax registrations
+
+Customer tax status affects tax treatment:
+
+| Scenario | Tax Treatment |
+|----------|---------------|
+| B2C (no VAT number) | Charge VAT at applicable rate |
+| B2B (valid VAT number, different country) | Reverse charge (0% VAT) |
+| B2B (valid VAT number, same country) | Usually charge VAT |
+| B2B (invalid VAT number) | Treat as B2C, charge VAT |
+
+#### 3. Transaction location
+
+Where the transaction is deemed to take place:
+
+- **Goods**: Usually where goods are delivered
+- **Services**: Depends on service type and recipient location
+- **Digital services**: Customer's location
+
+#### 4. Product type
+
+Different products may have different tax rates:
+
+- Standard rate (e.g., 20% in France)
+- Reduced rate (e.g., 5.5% for books in France)
+- Super-reduced rate (e.g., 2.1% for essentials in Spain)
+- Zero rate
+- Exempt
+
+### Result of automatic calculation
+
+After automatic calculation, the invoice contains calculated tax data:
+
+```javascript
+const invoice = await nocotax.invoices.create({
+  automatic_tax_calculation: { enabled: true },
+  // ...
+});
+
+console.log({
+  subtotal: invoice.subtotal,        // 9900 (€99.00)
+  tax_amount: invoice.tax_amount,    // 1980 (€19.80 at 20% VAT)
+  total: invoice.total,              // 11880 (€118.80)
+  
+  // Detailed tax breakdown
+  tax_breakdown: invoice.tax_breakdown
+  // [
+  //   {
+  //     jurisdiction: 'FR',
+  //     rate: 0.20,
+  //     amount: 1980,
+  //     taxable_amount: 9900
+  //   }
+  // ]
+});
+```
+
+## Default vs explicit tax registration numbers
+
+When creating invoices, you can control which tax registration numbers appear on the invoice.
+
+### Default behavior
+
+By default, Nocotax automatically selects the appropriate tax registration number for each organization based on the transaction:
+
+```javascript
+const invoice = await nocotax.invoices.create({
+  flow: 'sales',
+  currency: 'EUR'
+  customer_id: 'org_customer_123',
+  // Tax numbers selected automatically
+  automatic_tax_calculation: { enabled: true },
+  items: [...]
+});
+```
+
+**How default selection works**:
+
+For the **supplier** (seller):
+- Nocotax uses the tax registration relevant to the transaction jurisdiction
+- If you have multiple registrations (e.g., standard + OSS), the most appropriate one is selected
+- Example: Selling to a German customer, your German VAT number or EU OSS number is used
+
+For the **customer** (buyer):
+- If the customer has a tax registration in the transaction jurisdiction, it's included
+- For B2B transactions, the customer's VAT number is validated and included
+- For B2C transactions, no customer tax number is required
+
+### Explicit tax registration numbers
+
+You can override the default behavior and explicitly specify which tax registration numbers to use:
+
+```javascript
+const invoice = await nocotax.invoices.create({
+  flow: 'sales',
+  supplier_id: 'org_your_platform',
+  customer_id: 'org_customer_123',
+  supplier_tax_registration_id: 'taxreg_your_de_vat',  // Specific German VAT
+  customer_tax_registration_id: 'taxreg_customer_de',  // Customer's German VAT
+  automatic_tax_calculation: { enabled: true },
+  items: [...]
+});
+```
+
+**When to use explicit IDs**:
+- You have multiple registrations and need to specify which one to use
+- Testing specific tax scenarios
+- Ensuring a particular registration appears on the invoice
+- Handling edge cases with complex tax setups
+
+<Warning>
+Explicitly setting incorrect tax registration IDs can result in wrong tax calculations. Use the default behavior unless you have a specific reason to override.
+</Warning>
+
+### Example: Multiple registrations
+
+If your platform has both a standard and an OSS registration in the EU:
+
+```javascript
+// Default: Nocotax picks the best registration
+const invoice1 = await nocotax.invoices.create({
+  flow: 'sales',
+  supplier_id: 'org_your_platform',
+  customer_id: 'org_german_customer',
+  // Nocotax will use German standard VAT or EU OSS
+  automatic_tax_calculation: { enabled: true },
+  items: [...]
+});
+
+// Explicit: Force use of OSS registration
+const invoice2 = await nocotax.invoices.create({
+  flow: 'sales',
+  supplier_id: 'org_your_platform',
+  customer_id: 'org_german_customer',
+  supplier_tax_registration_id: 'taxreg_your_oss_eu',  // Force OSS
+  automatic_tax_calculation: { enabled: true },
+  items: [...]
+});
+```
+
+## Manual tax calculation
+
+For complete control over tax amounts, disable automatic calculation and specify tax manually:
+
+```javascript
+const invoice = await nocotax.invoices.create({
+  flow: 'sales',
+  supplier_id: 'org_your_platform',
+  customer_id: 'org_customer_123',
+  currency: 'EUR',
+  automatic_tax_calculation: {
+    enabled: false  // Disable automatic tax
+  },
+  items: [
+    {
+      description: 'Product',
+      quantity: 1,
+      unit_amount: 10000,
+      tax_amount: 2000  // Manually specify €20 tax
+    },
+    {
+      description: 'Service',
+      quantity: 2,
+      unit_amount: 5000,
+      tax_amount: 0  // No tax on this line
+    }
+  ]
+});
+
+console.log({
+  subtotal: invoice.subtotal,     // 20000 (€200.00)
+  tax_amount: invoice.tax_amount, // 2000 (€20.00)
+  total: invoice.total            // 22000 (€220.00)
+});
+```
+
+### When to use manual tax
+
+**Valid use cases**:
+- Importing historical invoices with known tax amounts
+- Handling unusual tax situations not covered by rules
+- Applying custom tax calculations from external systems
+- Zero-rating or exempting specific transactions manually
+
+**Risks and considerations**:
+- You're responsible for tax accuracy
+- No automatic compliance with tax rules
+- Requires careful manual review
+- May complicate tax reporting
+
+<Warning>
+Manual tax calculation bypasses Nocotax's compliance features. Use automatic calculation whenever possible to ensure accuracy and compliance.
+</Warning>
+
+### Mixed manual and automatic
+
+You cannot mix manual and automatic calculation within a single invoice. Each invoice must use one approach consistently:
+
+```javascript
+// ❌ Not allowed: mixing automatic and manual
+const invoice = await nocotax.invoices.create({
+  automatic_tax_calculation: { enabled: true },
+  items: [
+    {
+      description: 'Item 1',
+      quantity: 1,
+      unit_amount: 10000,
+      // Tax calculated automatically
+    },
+    {
+      description: 'Item 2',
+      quantity: 1,
+      unit_amount: 5000,
+      tax_amount: 500  // ❌ Can't specify manual tax here
+    }
+  ]
+});
+
+// ✓ Correct: all manual
+const invoice = await nocotax.invoices.create({
+  automatic_tax_calculation: { enabled: false },
+  items: [
+    {
+      description: 'Item 1',
+      quantity: 1,
+      unit_amount: 10000,
+      tax_amount: 2000
+    },
+    {
+      description: 'Item 2',
+      quantity: 1,
+      unit_amount: 5000,
+      tax_amount: 500
+    }
+  ]
+});
+```
+
+## Recalculating taxes on draft invoices
+
+While an invoice is in DRAFT status, you can recalculate taxes if circumstances change:
+
+```javascript
+// Create draft with automatic tax
+const invoice = await nocotax.invoices.create({
+  flow: 'sales',
+  customer_id: 'org_customer_123',
+  automatic_tax_calculation: { enabled: true },
+  items: [...]
+});
+
+// Update customer address
+await nocotax.organizations.update('org_customer_123', {
+  billing_address: {
+    country: 'DE'  // Changed from FR to DE
+  }
+});
+
+// Recalculate tax with new information
+await nocotax.invoices.recalculateTax(invoice.id);
+
+// Tax rates now reflect German VAT instead of French VAT
+```
+
+**When to recalculate**:
+- Customer or supplier address changed
+- Tax registrations were added or modified
+- Line item tax codes were updated
+- You want to reflect the latest tax rules
+
+<Note>
+Recalculation is only available for DRAFT invoices. Once finalized, tax amounts are locked.
+</Note>
+
+## Tax on different invoice flows
+
+Tax treatment varies by invoice flow:
+
+### Sales invoices (output tax)
+
+Tax you charge to customers on sales:
+
+```javascript
+const invoice = await nocotax.invoices.create({
+  flow: 'sales',
+  supplier_id: 'org_your_platform',    // You charge tax
+  customer_id: 'org_customer_123',
+  automatic_tax_calculation: { enabled: true },
+  items: [...]
+});
+```
+
+- You collect tax from customers
+- Tax increases the invoice total
+- You must remit collected tax to authorities
+- Reported on your VAT return as "output tax" or "sales tax"
+
+### Purchase invoices (input tax)
+
+Tax charged to you on purchases:
+
+```javascript
+const invoice = await nocotax.invoices.create({
+  flow: 'purchases',
+  supplier_id: 'org_supplier_456',
+  customer_id: 'org_your_platform',    // You're charged tax
+  automatic_tax_calculation: { enabled: true },
+  items: [...]
+});
+```
+
+- Supplier charges you tax
+- Tax increases what you pay
+- You may be able to reclaim this tax (input tax deduction)
+- Reported on your VAT return as "input tax"
+
+
+
+### Registration warnings
+
+If you're selling without proper registrations:
+
+```javascript
+// You're not registered in Germany
+const invoice = await nocotax.invoices.create({
+  flow: 'sales',
+  customer_id: 'org_german_customer',
+  automatic_tax_calculation: { enabled: true },
+  items: [...]
+});
+
+// Nocotax may:
+// - Show a warning about missing registration
+// - Apply your home country rate (if under thresholds)
+// - Suggest registering for tax in Germany
+```
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Always use automatic calculation for compliance">
+    Unless you have a specific reason to manually control tax, enable automatic calculation. It ensures:
+    - Accurate rates based on current tax rules
+    - Proper B2B vs B2C treatment
+    - Correct reverse charge application
+    - Up-to-date compliance
+  </Accordion>
+
+  <Accordion title="Specify tax codes for accuracy">
+    While optional, providing tax codes improves calculation accuracy, especially for products with reduced rates or special treatment:
+    - `tax_code: 'ebooks'` may apply reduced rates
+    - `tax_code: 'medical'` may apply exemptions
+    - `tax_code: 'export'` may apply zero rates
+  </Accordion>
+
+  <Accordion title="Keep tax registrations current">
+    Ensure your tax registrations in Nocotax match your actual registrations with tax authorities. Update them immediately when:
+    - You register in a new jurisdiction
+    - Registration numbers change
+    - Registration types change (e.g., standard to OSS)
+  </Accordion>
+
+  <Accordion title="Validate customer tax numbers">
+    For B2B sales, ensure customers provide valid tax registration numbers. Invalid numbers can result in:
+    - Incorrect reverse charge application
+    - Charging VAT when not required
+    - Compliance issues during audits
+  </Accordion>
+
+  <Accordion title="Use default tax registration selection">
+    Let Nocotax automatically select the appropriate tax registration numbers unless you have a specific reason to override. The default behavior is designed to ensure compliance.
+  </Accordion>
+</AccordionGroup>
+
+
+
+## Frequently Asked Questions
+
+<AccordionGroup>
+  <Accordion title="Can I change from automatic to manual tax after creating an invoice?">
+    No, the tax calculation method is locked. You would need to create a new invoice with the desired method if you need to change this behaviour.
+  </Accordion>
+
+  <Accordion title="What happens if I don't specify any tax information?">
+    If you enable automatic calculation but don't specify tax codes, Nocotax uses default tax treatment based on your business type and applicable rules. For manual calculation, omitting tax amounts means zero tax.
+  </Accordion>
+
+  <Accordion title="How do I handle tax-exempt customers?">
+    Tax-exempt status is typically handled automatically when the customer has an appropriate tax registration number (e.g., charity VAT number). For special cases, you can use manual tax calculation with zero tax amounts.
+  </Accordion>
+
+  <Accordion title="Can I see how tax was calculated?">
+    Yes. Invoices with automatic calculation include a `taxes` field showing jurisdictions, rates, taxable amounts, and tax amounts. This provides transparency into the calculation.
+  </Accordion>
+
+  <Accordion title="What if I disagree with the automatic calculation?">
+    First, verify your tax registrations, customer information, and tax codes are correct. If the calculation still seems wrong, contact support with details. You can temporarily use manual calculation as a workaround.
+  </Accordion>
+
+  <Accordion title="Do I need to specify tax registration IDs for every invoice?">
+    No. Default behavior is recommended—Nocotax automatically selects the appropriate tax registrations. Only specify explicitly when you have multiple registrations and need precise control.
+  </Accordion>
+</AccordionGroup>
