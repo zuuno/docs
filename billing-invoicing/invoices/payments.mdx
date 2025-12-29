@@ -1,0 +1,333 @@
+---
+title: "Invoice Payments"
+description: "Configure payment terms, track due dates, and reconcile payments on invoices."
+---
+
+## Overview
+
+Managing invoice payments involves three key aspects:
+- **Payment terms**: When payment is expected
+- **Payment tracking**: Monitoring what's been paid
+- **Payment reconciliation**: Matching payments to invoices
+
+## Payment terms
+
+Payment terms define when an invoice must be paid. They consist of two components: a **type** and a **days** value.
+
+### Payment term types
+
+#### NET
+
+Payment due a fixed number of days from the invoice date.
+
+```bash
+curl https://api.nocotax.app/invoices \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "payment_terms": {
+      "type": "NET",
+      "days": 30
+    },
+    "items": [...]
+  }'
+```
+
+**Examples**:
+- `NET 30`: Due 30 days from invoice date
+- `NET 15`: Due 15 days from invoice date
+- `NET 60`: Due 60 days from invoice date
+
+**Due date calculation**:
+```
+Invoice date: January 15, 2025
+Payment terms: NET 30
+Due date: February 14, 2025
+```
+
+#### END_OF_MONTH
+
+Payment due a certain number of days after the end of the invoice month.
+
+```bash
+curl https://api.nocotax.app/invoices \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "payment_terms": {
+      "type": "END_OF_MONTH",
+      "days": 30
+    },
+    "items": [...]
+  }'
+```
+
+**Examples**:
+- `END_OF_MONTH 30`: Due the last day of the month of 30 days after
+- `END_OF_MONTH 0`: Due on the last day of the invoice month
+- `END_OF_MONTH 45`: Due the last day of the month of 45 days after
+
+**Due date calculation**:
+```
+Invoice date: January 15, 2025
+Payment terms: END_OF_MONTH 30
++30 days: Feb 14, 2025
+Due date: Feb 28, 2025
+```
+
+### Setting payment terms
+
+Payment terms can be set when creating an invoice:
+
+```bash
+curl https://api.nocotax.app/invoices \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "payment_terms": {
+      "type": "NET",
+      "days": 45
+    },
+    "items": [
+      {
+        "description": "Annual Subscription",
+        "quantity": 1,
+        "unit_extratax_amount": 120000
+      }
+    ]
+  }'
+```
+
+### Due date calculation
+
+The `due_date` is automatically calculated when you finalize the invoice:
+
+```bash
+# Finalize the invoice
+curl https://api.nocotax.app/invoices/inv_123/finalize \
+  -X POST \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+
+# Response includes calculated due_date
+{
+  "id": "inv_123",
+  "status": "FINALIZED",
+  "document_date": "2025-01-15",
+  "due_date": "2025-02-28",
+  "payment_terms": {
+    "type": "NET",
+    "days": 30
+  }
+}
+```
+
+<Note>
+If no payment terms are specified, the `due_date` is not calculated and payment tracking will be less meaningful.
+</Note>
+
+## Payment status
+
+Once finalized, invoices track payment status automatically:
+
+### OPEN
+
+Invoice is due but the due date hasn't passed yet.
+
+```json
+{
+  "payment_status": "OPEN",
+  "due_date": "2025-02-14",
+  "total_tax_included_amount": 10000,
+  "amount_remaining": 10000
+}
+```
+
+### DUE
+
+Invoice is past its due date and still unpaid.
+
+```json
+{
+  "payment_status": "DUE",
+  "due_date": "2025-01-10",
+  "total_tax_included_amount": 10000,
+  "amount_remaining": 10000
+}
+```
+
+### DUE (PARTIALLY PAID)
+
+Invoice has received partial payment, but is still due
+
+```json
+{
+  "payment_status": "DUE",
+  "total_tax_included_amount": 10000,
+  "amount_paid": 6000,
+  "amount_remaining": 4000
+}
+```
+
+### PAID
+
+Invoice is fully paid.
+
+```json
+{
+  "payment_status": "PAID",
+  "total_tax_included_amount": 10000,
+  "amount_paid": 10000,
+  "amount_remaining": 0
+}
+```
+
+## Attaching payments
+
+Record payments received or made on an invoice.
+
+### Full payment
+
+Mark an invoice as fully paid:
+
+```bash
+curl https://api.nocotax.app/invoices/inv_123/attach_payment \
+  -X POST \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+This marks the invoice as paid with:
+- Amount: Full `amount_remaining`
+- Payment date: Current date
+- No external reference
+
+### Partial payment or detailed record
+
+Record a partial payment with specific amount:
+
+```bash
+curl https://api.nocotax.app/invoices/inv_123/attach_payment \
+  -X POST \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transaction_data": {
+      "amount": 5000,
+      "currency": "EUR",
+      "transaction_type": "payment",
+      "reference": "PAYxPSP-ch_abc123" // Link to external payment system
+    }
+  }'
+```
+
+### Payment parameters
+
+All these parameters must be nested into a `transaction_data` field.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `amount` | integer | Payment amount in smallest currency unit (optional, defaults to amount_remaining) |
+| `currency` | string | Payment currency |
+| `reference` | string | External payment reference (e.g., Stripe charge ID, bank transfer reference) |
+| `transaction_type` | string | Payment, Transfer |
+
+## Payment reconciliation
+
+Reconciliation is the process of matching payments to invoices and ensuring balances are accurate.
+
+### Automatic reconciliation
+
+When you attach a payment, Nocotax automatically:
+
+1. **Updates amount_remaining**: Deducts payment amount
+2. **Updates payment_status**: Changes to PAID or PARTIALLY_PAID
+3. **Adjusts AP/AR balances**: Updates organization balances
+4. **Records payment history**: Tracks all payments on the invoice
+
+### Multiple payments
+
+An invoice can have multiple payments:
+
+```bash
+# First partial payment
+curl https://api.nocotax.app/invoices/inv_123/attach_payment \
+  -X POST \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -d '{
+    "transaction_data": {
+      "amount": 3000,
+      "currency": "EUR",
+      "transaction_type": "payment",
+      "reference": "PAYMENT_1"
+    }
+  }'
+
+# Second partial payment
+curl https://api.nocotax.app/invoices/inv_123/attach_payment \
+  -X POST \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -d '{
+    "transaction_data": {
+      "amount": 7000,
+      "currency": "EUR",
+      "transaction_type": "payment",
+      "reference": "PAYMENT_2"
+    }
+  }'
+```
+
+## Credit notes and payment balance
+
+Credit notes affect the payment balance:
+
+```bash
+# Original invoice: €100
+# Customer pays: €100
+# Status: PAID
+
+# Issue credit note: -€20
+curl https://api.nocotax.app/credit_notes \
+  -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "invoice_id": "inv_123",
+    "items": [
+      {
+        "description": "Correction",
+        "quantity": 1,
+        "unit_extratax_amount": -2000
+      }
+    ]
+  }'
+
+# After finalizing credit note:
+# amount_remaining: -€20 (credit balance)
+# Status: PAID (but with credit to refund or apply)
+```
+
+The credit note creates a credit balance that can be:
+- Refunded to the customer
+- Applied to future invoices
+- Tracked as credit owed
+
+See [Credit Notes](/billing-invoicing/invoices/credit-notes) for details.
+
+
+## Best practices
+
+- Always set payment terms when creating invoices for accurate due date tracking
+- Use `NET` terms for fixed payment periods
+- Use `END_OF_MONTH` terms for B2B customers who process payments monthly
+- Include payment references to link to external payment systems
+- Record partial payments as they're received
+- Monitor `payment_status` to identify overdue invoices
