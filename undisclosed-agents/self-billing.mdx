@@ -67,6 +67,9 @@ curl https://api.nocotax.app/invoices \
     "flow": "purchases",
     "supplier_id": "org_supplier_456",
     "currency": "EUR",
+    "issuer": { 
+      "type": "CUSTOMER" // In order to tag the invoice as a selfbilling document
+    },
     "automatic_tax_calculation": {
       "enabled": true
     },
