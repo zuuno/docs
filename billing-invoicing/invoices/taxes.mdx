@@ -5,7 +5,7 @@ description: "Learn how to configure and calculate taxes on invoices, from autom
 
 ## Overview
 
-Nocotax provides flexible tax management for invoices, allowing you to either let the system automatically calculate taxes based on registrations and rules, or manually specify tax amounts for complete control.
+Nocotax provides flexible tax management for invoices, allowing you to either let the system automatically calculate taxes based on registrations and rules, or manually specify tax rates for complete control.
 
 Proper tax configuration ensures:
 - Compliance with local tax regulations
@@ -17,7 +17,7 @@ Proper tax configuration ensures:
 
 Nocotax supports two approaches to tax calculation on invoices:
 
-### Automatic tax calculation
+### Automatic tax calculation (recommended)
 
 The system automatically determines applicable tax rates and calculates tax amounts based on:
 - Your tax registrations
@@ -30,32 +30,40 @@ The system automatically determines applicable tax rates and calculates tax amou
 
 ### Manual tax calculation
 
-You specify exact tax amounts for each line item, overriding automatic calculation.
+You specify exact tax rates and jurisdictions for each invoice, overriding automatic calculation.
 
 **When to use**: Special cases, legacy data migration, or when you have custom tax calculation logic.
+
+<Note>
+By default, taxes are not calculated automatically. You must explicitly enable automatic tax calculation or provide manual tax configuration.
+</Note>
 
 ## Automatic tax calculation
 
 Enable automatic tax calculation when creating an invoice:
 
-```javascript
-const invoice = await nocotax.invoices.create({
-  flow: 'sales',
-  supplier_id: 'org_your_platform',
-  customer_id: 'org_customer_123',
-  currency: 'EUR',
-  automatic_tax_calculation: {
-    enabled: true  // Enable automatic tax
-  },
-  items: [
-    {
-      description: 'SaaS Subscription',
-      quantity: 1,
-      unit_amount: 9900,
-      tax_code: 'digital_services' // Tax category
-    }
-  ]
-});
+```bash
+curl -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  https://api.nocotax.app/invoices \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "automatic_tax_calculation": {
+      "enabled": true
+    },
+    "items": [
+      {
+        "description": "SaaS Subscription",
+        "quantity": 1,
+        "unit_extratax_amount": 9900,
+        "product": {
+          "tax_code": "D10000000"
+        }
+      }
+    ]
+  }'
 ```
 
 ### How automatic calculation works
@@ -72,37 +80,53 @@ When `automatic_tax_calculation.enabled: true`, Nocotax:
 
 Tax codes categorize your products or services for tax purposes. They help Nocotax apply the correct tax treatment:
 
-```json
-items: [
-  {
-    description: 'Software License',
-    quantity: 1,
-    unit_extratax_amount: 10000,
-    product: {
-      tax_code: 'S10000000'  // Digital services
-    }
-  },
-  {
-    description: 'General furniture',
-    quantity: 3,
-    unit_extratax_amount: 999,
-    product: {
-      tax_code: 'P10000000'  // Physical goods
-    }
-  },
-  {
-    description: 'Consulting',
-    quantity: 1,
-    unit_extratax_amount: 50000,
-    product: {
-      tax_code: 'S10000000'  // Services
-    }
-  }
-]
+```bash
+curl -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  https://api.nocotax.app/invoices \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "automatic_tax_calculation": {
+      "enabled": true
+    },
+    "items": [
+      {
+        "description": "Software License",
+        "quantity": 1,
+        "unit_extratax_amount": 10000,
+        "product": {
+          "tax_code": "D10000000"
+        }
+      },
+      {
+        "description": "General furniture",
+        "quantity": 3,
+        "unit_extratax_amount": 999,
+        "product": {
+          "tax_code": "P10000000"
+        }
+      },
+      {
+        "description": "Consulting",
+        "quantity": 1,
+        "unit_extratax_amount": 50000,
+        "product": {
+          "tax_code": "S10000000"
+        }
+      }
+    ]
+  }'
 ```
 
+**Standard tax codes**:
+- `D10000000`: Digital goods and services (SaaS, software, digital content)
+- `S10000000`: Services (consulting, professional services)
+- `P10000000`: Physical goods (products, merchandise)
+
 <Note>
-Tax codes are optional when automatic calculation is enabled. If omitted, Nocotax uses the default tax treatment for your business type (digital goods)
+Tax codes are optional when automatic calculation is enabled. If omitted, Nocotax uses the default tax treatment for digital goods.
 </Note>
 
 ### Tax determination factors
@@ -113,14 +137,14 @@ Automatic tax calculation considers multiple factors:
 
 Your tax registrations determine where you can charge tax:
 
-```javascript
-// You're registered for VAT in France and Germany
-// Sales to French customers: Charge French VAT
-// Sales to German customers: Charge German VAT
-// Sales to Spanish customers: Depends on registration and thresholds
+```
+You're registered for VAT in France and Germany
+Sales to French customers: Charge French VAT
+Sales to German customers: Charge German VAT
+Sales to Spanish customers: Depends on registration and thresholds
 ```
 
-See [Tax Registrations Configuration](/tax-configuration) for setup details.
+See [Tax Registrations Configuration](/tax-registrations) for setup details.
 
 #### 2. Customer tax registrations
 
@@ -155,153 +179,127 @@ Different products may have different tax rates:
 
 After automatic calculation, the invoice contains calculated tax data:
 
-```javascript
-const invoice = await nocotax.invoices.create({
-  automatic_tax_calculation: { enabled: true },
-  // ...
-});
-
-console.log({
-  subtotal: invoice.subtotal,        // 9900 (€99.00)
-  tax_amount: invoice.tax_amount,    // 1980 (€19.80 at 20% VAT)
-  total: invoice.total,              // 11880 (€118.80)
-  
-  // Detailed tax breakdown
-  tax_breakdown: invoice.tax_breakdown
-  // [
-  //   {
-  //     jurisdiction: 'FR',
-  //     rate: 0.20,
-  //     amount: 1980,
-  //     taxable_amount: 9900
-  //   }
-  // ]
-});
+<CodeGroup>
+```bash Request
+curl -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  https://api.nocotax.app/invoices \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "automatic_tax_calculation": {
+      "enabled": true
+    },
+    "items": [
+      {
+        "description": "SaaS Subscription",
+        "quantity": 1,
+        "unit_extratax_amount": 9900,
+        "product": {
+          "tax_code": "D10000000"
+        }
+      }
+    ]
+  }'
 ```
 
-## Default vs explicit tax registration numbers
-
-When creating invoices, you can control which tax registration numbers appear on the invoice.
-
-### Default behavior
-
-By default, Nocotax automatically selects the appropriate tax registration number for each organization based on the transaction:
-
-```javascript
-const invoice = await nocotax.invoices.create({
-  flow: 'sales',
-  currency: 'EUR'
-  customer_id: 'org_customer_123',
-  // Tax numbers selected automatically
-  automatic_tax_calculation: { enabled: true },
-  items: [...]
-});
+```json Response
+{
+  "id": "inv_123",
+  "flow": "sales",
+  "currency": "EUR",
+  "total_extratax_amount": 9900,
+  "total_tax_amount": 1980,
+  "total_tax_included_amount": 11880,
+  "taxes": [
+    {
+      "tax_id": "eu-vat",
+      "jurisdiction": "FR",
+      "percentage": 20.0,
+      "taxable_amount": 9900,
+      "tax_amount": 1980
+    }
+  ]
+}
 ```
-
-**How default selection works**:
-
-For the **supplier** (seller):
-- Nocotax uses the tax registration relevant to the transaction jurisdiction
-- If you have multiple registrations (e.g., standard + OSS), the most appropriate one is selected
-- Example: Selling to a German customer, your German VAT number or EU OSS number is used
-
-For the **customer** (buyer):
-- If the customer has a tax registration in the transaction jurisdiction, it's included
-- For B2B transactions, the customer's VAT number is validated and included
-- For B2C transactions, no customer tax number is required
-
-### Explicit tax registration numbers
-
-You can override the default behavior and explicitly specify which tax registration numbers to use:
-
-```javascript
-const invoice = await nocotax.invoices.create({
-  flow: 'sales',
-  supplier_id: 'org_your_platform',
-  customer_id: 'org_customer_123',
-  supplier_tax_registration_id: 'taxreg_your_de_vat',  // Specific German VAT
-  customer_tax_registration_id: 'taxreg_customer_de',  // Customer's German VAT
-  automatic_tax_calculation: { enabled: true },
-  items: [...]
-});
-```
-
-**When to use explicit IDs**:
-- You have multiple registrations and need to specify which one to use
-- Testing specific tax scenarios
-- Ensuring a particular registration appears on the invoice
-- Handling edge cases with complex tax setups
-
-<Warning>
-Explicitly setting incorrect tax registration IDs can result in wrong tax calculations. Use the default behavior unless you have a specific reason to override.
-</Warning>
-
-### Example: Multiple registrations
-
-If your platform has both a standard and an OSS registration in the EU:
-
-```javascript
-// Default: Nocotax picks the best registration
-const invoice1 = await nocotax.invoices.create({
-  flow: 'sales',
-  supplier_id: 'org_your_platform',
-  customer_id: 'org_german_customer',
-  // Nocotax will use German standard VAT or EU OSS
-  automatic_tax_calculation: { enabled: true },
-  items: [...]
-});
-
-// Explicit: Force use of OSS registration
-const invoice2 = await nocotax.invoices.create({
-  flow: 'sales',
-  supplier_id: 'org_your_platform',
-  customer_id: 'org_german_customer',
-  supplier_tax_registration_id: 'taxreg_your_oss_eu',  // Force OSS
-  automatic_tax_calculation: { enabled: true },
-  items: [...]
-});
-```
+</CodeGroup>
 
 ## Manual tax calculation
 
-For complete control over tax amounts, disable automatic calculation and specify tax manually:
+For complete control over tax rates, disable automatic calculation and specify tax manually at the invoice level:
 
-```javascript
-const invoice = await nocotax.invoices.create({
-  flow: 'sales',
-  supplier_id: 'org_your_platform',
-  customer_id: 'org_customer_123',
-  currency: 'EUR',
-  automatic_tax_calculation: {
-    enabled: false  // Disable automatic tax
-  },
-  items: [
-    {
-      description: 'Product',
-      quantity: 1,
-      unit_amount: 10000,
-      tax_amount: 2000  // Manually specify €20 tax
+```bash
+curl -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  https://api.nocotax.app/invoices \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "automatic_tax_calculation": {
+      "enabled": false
     },
-    {
-      description: 'Service',
-      quantity: 2,
-      unit_amount: 5000,
-      tax_amount: 0  // No tax on this line
-    }
-  ]
-});
-
-console.log({
-  subtotal: invoice.subtotal,     // 20000 (€200.00)
-  tax_amount: invoice.tax_amount, // 2000 (€20.00)
-  total: invoice.total            // 22000 (€220.00)
-});
+    "items": [
+      {
+        "description": "Product",
+        "quantity": 1,
+        "unit_extratax_amount": 10000,
+        "taxes": [
+          {
+            "jurisdiction": "FR",
+            "percentage": 20,
+            "tax_id": "eu-vat"
+          }
+        ],
+      },
+      {
+        "description": "Service",
+        "quantity": 2,
+        "unit_extratax_amount": 5000,
+        "taxes": [
+          {
+            "jurisdiction": "FR",
+            "percentage": 20,
+            "tax_id": "eu-vat"
+          }
+        ],
+      }
+    ]
+  }'
 ```
+
+The tax configuration applies to all line items on the invoice. Nocotax calculates the tax amounts based on the rates you provide.
+
+### Explicit tax registration IDs
+
+When using manual tax calculation, you can specify which tax registration numbers to use:
+
+```bash
+curl -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  https://api.nocotax.app/invoices \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "supplier_tax_registration_id": "taxreg_your_de_vat",
+    "customer_tax_registration_id": "taxreg_customer_de",
+    "automatic_tax_calculation": {
+      "enabled": false
+    },
+    "items": [...]
+  }'
+```
+
+<Warning>
+Explicit tax registration IDs only work with manual tax calculation. You cannot specify registration IDs when automatic calculation is enabled.
+</Warning>
 
 ### When to use manual tax
 
 **Valid use cases**:
-- Importing historical invoices with known tax amounts
+- Importing historical invoices with known tax rates
 - Handling unusual tax situations not covered by rules
 - Applying custom tax calculations from external systems
 - Zero-rating or exempting specific transactions manually
@@ -316,85 +314,38 @@ console.log({
 Manual tax calculation bypasses Nocotax's compliance features. Use automatic calculation whenever possible to ensure accuracy and compliance.
 </Warning>
 
-### Mixed manual and automatic
+### Example: Zero-rated transaction
 
-You cannot mix manual and automatic calculation within a single invoice. Each invoice must use one approach consistently:
-
-```javascript
-// ❌ Not allowed: mixing automatic and manual
-const invoice = await nocotax.invoices.create({
-  automatic_tax_calculation: { enabled: true },
-  items: [
-    {
-      description: 'Item 1',
-      quantity: 1,
-      unit_amount: 10000,
-      // Tax calculated automatically
+```bash
+curl -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  https://api.nocotax.app/invoices \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "automatic_tax_calculation": {
+      "enabled": false
     },
-    {
-      description: 'Item 2',
-      quantity: 1,
-      unit_amount: 5000,
-      tax_amount: 500  // ❌ Can't specify manual tax here
-    }
-  ]
-});
-
-// ✓ Correct: all manual
-const invoice = await nocotax.invoices.create({
-  automatic_tax_calculation: { enabled: false },
-  items: [
-    {
-      description: 'Item 1',
-      quantity: 1,
-      unit_amount: 10000,
-      tax_amount: 2000
-    },
-    {
-      description: 'Item 2',
-      quantity: 1,
-      unit_amount: 5000,
-      tax_amount: 500
-    }
-  ]
-});
+    "items": [
+      {
+        "description": "Export goods",
+        "quantity": 1,
+        "unit_extratax_amount": 50000,
+        "taxes": [
+          {
+            "jurisdiction": "FR",
+            "percentage": 0,
+            "tax_id": "eu-vat",
+            "tax_exemption": {
+              "type": "EXPORT"
+            }
+          }
+        ],
+      }
+    ]
+  }'
 ```
-
-## Recalculating taxes on draft invoices
-
-While an invoice is in DRAFT status, you can recalculate taxes if circumstances change:
-
-```javascript
-// Create draft with automatic tax
-const invoice = await nocotax.invoices.create({
-  flow: 'sales',
-  customer_id: 'org_customer_123',
-  automatic_tax_calculation: { enabled: true },
-  items: [...]
-});
-
-// Update customer address
-await nocotax.organizations.update('org_customer_123', {
-  billing_address: {
-    country: 'DE'  // Changed from FR to DE
-  }
-});
-
-// Recalculate tax with new information
-await nocotax.invoices.recalculateTax(invoice.id);
-
-// Tax rates now reflect German VAT instead of French VAT
-```
-
-**When to recalculate**:
-- Customer or supplier address changed
-- Tax registrations were added or modified
-- Line item tax codes were updated
-- You want to reflect the latest tax rules
-
-<Note>
-Recalculation is only available for DRAFT invoices. Once finalized, tax amounts are locked.
-</Note>
 
 ## Tax on different invoice flows
 
@@ -404,14 +355,19 @@ Tax treatment varies by invoice flow:
 
 Tax you charge to customers on sales:
 
-```javascript
-const invoice = await nocotax.invoices.create({
-  flow: 'sales',
-  supplier_id: 'org_your_platform',    // You charge tax
-  customer_id: 'org_customer_123',
-  automatic_tax_calculation: { enabled: true },
-  items: [...]
-});
+```bash
+curl -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  https://api.nocotax.app/invoices \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "automatic_tax_calculation": {
+      "enabled": true
+    },
+    "items": [...]
+  }'
 ```
 
 - You collect tax from customers
@@ -423,14 +379,19 @@ const invoice = await nocotax.invoices.create({
 
 Tax charged to you on purchases:
 
-```javascript
-const invoice = await nocotax.invoices.create({
-  flow: 'purchases',
-  supplier_id: 'org_supplier_456',
-  customer_id: 'org_your_platform',    // You're charged tax
-  automatic_tax_calculation: { enabled: true },
-  items: [...]
-});
+```bash
+curl -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  https://api.nocotax.app/invoices \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "purchases",
+    "currency": "EUR",
+    "supplier_id": "org_supplier_456",
+    "automatic_tax_calculation": {
+      "enabled": true
+    },
+    "items": [...]
+  }'
 ```
 
 - Supplier charges you tax
@@ -438,26 +399,153 @@ const invoice = await nocotax.invoices.create({
 - You may be able to reclaim this tax (input tax deduction)
 - Reported on your VAT return as "input tax"
 
+## Common scenarios
 
+### Scenario 1: EU B2B sale with reverse charge
 
-### Registration warnings
-
-If you're selling without proper registrations:
-
-```javascript
-// You're not registered in Germany
-const invoice = await nocotax.invoices.create({
-  flow: 'sales',
-  customer_id: 'org_german_customer',
-  automatic_tax_calculation: { enabled: true },
-  items: [...]
-});
-
-// Nocotax may:
-// - Show a warning about missing registration
-// - Apply your home country rate (if under thresholds)
-// - Suggest registering for tax in Germany
+<CodeGroup>
+```bash Request
+curl -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  https://api.nocotax.app/invoices \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_german_business",
+    "automatic_tax_calculation": {
+      "enabled": true
+    },
+    "items": [
+      {
+        "description": "Software License",
+        "quantity": 1,
+        "unit_extratax_amount": 10000,
+        "product": {
+          "tax_code": "D10000000"
+        }
+      }
+    ]
+  }'
 ```
+
+```json Response
+{
+  "id": "inv_123",
+  "total_extratax_amount": 10000,
+  "total_tax_amount": 0,
+  "total_tax_included_amount": 10000,
+  "taxes": [
+    {
+      "tax_id": "eu-vat",
+      "jurisdiction": "FR",
+      "percentage": 0,
+      "tax_exemption": {
+        "type": "REVERSE_CHARGE"
+      },
+      "taxable_amount": 10000,
+      "tax_amount": 0
+    }
+  ]
+}
+```
+</CodeGroup>
+
+### Scenario 2: EU B2C sale via OSS
+
+<CodeGroup>
+```bash Request
+curl -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  https://api.nocotax.app/invoices \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_spanish_consumer",
+    "automatic_tax_calculation": {
+      "enabled": true
+    },
+    "items": [
+      {
+        "description": "E-book",
+        "quantity": 1,
+        "unit_extratax_amount": 999,
+        "product": {
+          "tax_code": "D10000000"
+        }
+      }
+    ]
+  }'
+```
+
+```json Response
+{
+  "id": "inv_456",
+  "total_extratax_amount": 999,
+  "total_tax_amount": 40,
+  "total_tax_included_amount": 1039,
+  "taxes": [
+    {
+      "tax_id": "eu-vat",
+      "jurisdiction": "ES",
+      "percentage": 4.0,
+      "taxable_amount": 999,
+      "tax_amount": 40
+    }
+  ]
+}
+```
+</CodeGroup>
+
+### Scenario 3: Manual tax for specific rate
+
+<CodeGroup>
+```bash Request
+curl -u ${ACCOUNT_ID}:${YOUR_API_KEY} \
+  https://api.nocotax.app/invoices \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flow": "sales",
+    "currency": "EUR",
+    "customer_id": "org_customer_123",
+    "automatic_tax_calculation": {
+      "enabled": false
+    },
+    "items": [
+      {
+        "description": "Books",
+        "quantity": 3,
+        "unit_extratax_amount": 1500,
+        "taxes": [
+          {
+            "jurisdiction": "FR",
+            "percentage": 5.5,
+            "tax_id": "eu-vat"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+```json Response
+{
+  "id": "inv_789",
+  "total_extratax_amount": 4500,
+  "total_tax_amount": 248,
+  "total_tax_included_amount": 4748,
+  "taxes": [
+    {
+      "tax_id": "eu-vat",
+      "jurisdiction": "FR",
+      "percentage": 5.5,
+      "taxable_amount": 4500,
+      "tax_amount": 248
+    }
+  ]
+}
+```
+</CodeGroup>
+
 
 ## Best practices
 
